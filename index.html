@@ -86,6 +86,15 @@ document.getElementById('btnConnect').onclick = async () => {
         updateLog("Gagal connect: " + err.message);
     }
 };
+        const resp = await window.solana.connect();
+        userPubKey = resp.publicKey;
+        document.getElementById('btnConnect').innerText = "Wallet Connected ✅";
+        document.getElementById('btnConnect').style.background = "#7d33ff";
+        updateLog("Wallet terhubung: " + userPubKey.toString().substring(0, 8) + "...");
+    } catch (err) {
+        updateLog("Gagal connect: " + err.message);
+    }
+};
 
     document.getElementById('btnConnect').onclick = async () => {
         try {
