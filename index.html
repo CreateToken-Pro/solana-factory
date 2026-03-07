@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Solana Factory v19 | Helius VIP</title>
-    <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@solana/spl-token@0.3.9/lib/index.iife.min.js"></script>
-    <script src="https://bundle.run/buffer@6.0.3"></script>
-    <script src="https://unpkg.com/@metaplex-foundation/mpl-token-metadata@2.13.0/dist/index.iife.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/solana-web3.js/1.95.3/index.iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.9/lib/index.iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@metaplex-foundation/mpl-token-metadata@2.13.0/dist/index.iife.min.js"></script>
     <style>
         :root { --green: #14f195; --purple: #9945ff; --bg: #0b0b0b; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; padding: 20px; display: flex; justify-content: center; }
@@ -62,11 +62,11 @@
 
 <script>
     window.Buffer = buffer.Buffer;
-    
-    // FUNGSI FIX: Mengambil library splToken secara aman
-    function getSplToken() {
-        return window.splToken || (window.solanaWeb3 ? window.solanaWeb3.splToken : null);
-    }
+
+function getSplToken() {
+    // Jalur cadangan agar library spl-token pasti terbaca
+    return window.splToken || (window.solanaWeb3 ? window.solanaWeb3.splToken : null) || (window.solanaWeb3 ? window.solanaWeb3.splToken : null);
+}
 
     const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
     const OWNER_FEE_DEST = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8";
