@@ -1,207 +1,142 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>Solana Factory v19 | Helius VIP</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/solana-web3.js/1.95.3/index.iife.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.3.9/lib/index.iife.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@metaplex-foundation/mpl-token-metadata@2.13.0/dist/index.iife.min.js"></script>
-    <style>
-        :root { --green: #14f195; --purple: #9945ff; --bg: #0b0b0b; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 550px; background: #121212; padding: 25px; border-radius: 20px; border: 1px solid #333; }
-        .preview-box { width: 70px; height: 70px; border-radius: 50%; background: #1a1a1a; margin: 0 auto 15px; border: 2px dashed var(--green); overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        .preview-box img { width: 100%; height: 100%; object-fit: cover; }
-        input, textarea { width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #333; color: white; border-radius: 10px; margin-bottom: 10px; box-sizing: border-box; font-size: 14px; }
-        .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; }
-        #btnConnect { background: var(--purple); color: white; margin-bottom: 15px; }
-        #btnCreate { background: var(--green); color: black; }
-        .auth-card { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; font-size: 12px; }
-        #log { font-size: 11px; color: #14f195; margin-top: 15px; background: #000; padding: 10px; border-radius: 8px; min-height: 100px; border: 1px solid #222; font-family: monospace; overflow-y: auto; max-height: 150px; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h2 style="text-align:center; color:var(--green); margin-bottom:5px;">Solana Token Creator</h2>
-    <p style="text-align:center; font-size:12px; color:#666; margin-bottom:20px;">v19: Helius VIP Fix</p>
+// --- 1. FIX FUNGSI UPLOAD IPFS (Support Socials) ---
+async function uploadIPFS(file, name, symbol, desc, website, twitter, telegram) {
+    const formData = new FormData();
+    formData.append('file', file);
     
-    <div class="preview-box"><img id="preview" style="display:none"></div>
-    <button id="btnConnect" class="btn">1. CONNECT PHANTOM WALLET</button>
+    // Upload Logo
+    const imgRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+        method: 'POST', 
+        headers: { Authorization: `Bearer ${PINATA_JWT}` }, 
+        body: formData
+    });
+    const imgData = await imgRes.json();
+    const imageUrl = `https://gateway.pinata.cloud/ipfs/${imgData.IpfsHash}`;
 
-    <div id="formArea">
-        <input type="text" id="name" placeholder="Token Name">
-        <input type="text" id="symbol" placeholder="Symbol">
-        <textarea id="desc" placeholder="Token Description..."></textarea>
-        <input type="file" id="logoFile" accept="image/*">
+    // --- FIX POIN 2: STRUKTUR JSON EXTENSIONS ---
+    const metaJSON = { 
+        name, 
+        symbol, 
+        description: desc || "", 
+        image: imageUrl,
+        external_url: website || "", // Standar Metadata
+        extensions: {
+            website: website || "",
+            twitter: twitter || "",
+            telegram: telegram || ""
+        }
+    };
 
-        <div class="social-grid">
-            <input type="text" id="website" placeholder="Website URL">
-            <input type="text" id="twitter" placeholder="Twitter URL">
-            <input type="text" id="telegram" placeholder="Telegram URL">
-            <input type="text" id="discord" placeholder="Discord URL">
-        </div>
-
-        <div style="display:flex; gap:10px">
-            <input type="number" id="supply" value="1000000000">
-            <input type="number" id="decimals" value="9">
-        </div>
-
-        <div class="auth-card">
-            <div><input type="checkbox" id="revMint" checked> Revoke Mint (Fixed Supply)</div>
-            <div><input type="checkbox" id="revFreeze" checked> Revoke Freeze (Safe)</div>
-            <div><input type="checkbox" id="revUpdate" checked> Revoke Metadata (Immutable)</div>
-        </div>
-
-        <button id="btnCreate" class="btn">LAUNCH TOKEN (0.3 SOL)</button>
-        <div id="log">Status: Siap meluncur...</div>
-    </div>
-</div>
-
-<script>
-    window.Buffer = buffer.Buffer;
-
-function getSplToken() {
-    return window.splToken || (window.solanaWeb3 ? window.solanaWeb3.splToken : null);
+    const jsonRes = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
+        method: 'POST', 
+        headers: { Authorization: `Bearer ${PINATA_JWT}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(metaJSON)
+    });
+    const jsonData = await jsonRes.json();
+    return `https://gateway.pinata.cloud/ipfs/${jsonData.IpfsHash}`;
 }
 
-let userPubKey = null; // Ini nyawa tombol Connect
-const updateLog = (m) => {
-    const logEl = document.getElementById('log');
-    if(logEl) logEl.innerHTML = m;
-    console.log(m);
-};
+document.getElementById('btnCreate').onclick = async () => {
+    const spl = getSplToken();
+    if (!spl || !userPubKey) return alert("Connect Wallet Dulu!");
+    
+    const btn = document.getElementById('btnCreate');
+    if (btn.dataset.loading === "1") return; 
+    btn.dataset.loading = "1";
+    btn.disabled = true; 
 
-// Fungsi Connect Wallet (Pastikan id="btnConnect" ada di HTML lo)
-document.getElementById('btnConnect').onclick = async () => {
+    const connection = new solanaWeb3.Connection(HELIUS_RPC, "confirmed");
+    const updateProgress = (step, msg) => {
+        btn.innerText = `[${step}/5] ${msg}`;
+        log(`<b>Step ${step}:</b> ${msg}`);
+    };
+
     try {
-        const resp = await window.solana.connect();
-        userPubKey = resp.publicKey;
-        document.getElementById('btnConnect').innerText = "Wallet Connected ✅";
-        document.getElementById('btnConnect').style.background = "#7d33ff";
-        updateLog("Wallet terhubung: " + userPubKey.toString().substring(0, 8) + "...");
-    } catch (err) {
-        updateLog("Gagal connect: " + err.message);
+        // --- FIX POIN 5: VALIDASI LOGO & SUPPLY ---
+        updateProgress(1, "VALIDATING...");
+        const logoFile = document.getElementById('logoFile').files[0];
+        if (!logoFile) throw new Error("Logo wajib diupload!");
+        if (logoFile.size > 2 * 1024 * 1024) throw new Error("Logo Maksimal 2MB!");
+
+        const name = (document.getElementById('name').value || "").trim().slice(0, 32);
+        const symbol = (document.getElementById('symbol').value || "").trim().toUpperCase().slice(0, 10);
+        const desc = document.getElementById('desc').value || "";
+        const web = document.getElementById('website').value || "";
+        const twt = document.getElementById('twitter').value || "";
+        const tg = document.getElementById('telegram').value || "";
+
+        const rawSupply = document.getElementById('supply').value.replace(/[^0-9]/g, '');
+        const supplyValue = rawSupply ? BigInt(rawSupply) : 0n;
+        
+        if (supplyValue <= 0n) throw new Error("Supply harus > 0");
+        if (supplyValue > 1000000000000000n) throw new Error("Supply terlalu besar!"); // Proteksi Limit
+
+        const decimals = Math.min(9, Math.max(0, parseInt(document.getElementById('decimals').value) || 9));
+
+        // --- 2. UPLOAD METADATA (FIX POIN 1) ---
+        updateProgress(2, "UPLOADING IPFS...");
+        const metadataUri = await uploadIPFS(logoFile, name, symbol, desc, web, twt, tg);
+
+        // --- 3. BUILD TRANSACTION ---
+        updateProgress(3, "PREPARING ON-CHAIN...");
+        const mintKey = solanaWeb3.Keypair.generate();
+        const transaction = new solanaWeb3.Transaction();
+        const latestBlockHash = await connection.getLatestBlockhash('confirmed');
+        
+        transaction.recentBlockhash = latestBlockHash.blockhash;
+        transaction.lastValidBlockHeight = latestBlockHash.lastValidBlockHeight;
+        transaction.feePayer = userPubKey;
+
+        // A. Instructions: Fee + Mint Acc + Init Mint
+        transaction.add(
+            solanaWeb3.SystemProgram.transfer({ fromPubkey: userPubKey, toPubkey: new solanaWeb3.PublicKey(OWNER_FEE_DEST), lamports: 0.3 * solanaWeb3.LAMPORTS_PER_SOL }),
+            solanaWeb3.SystemProgram.createAccount({ fromPubkey: userPubKey, newAccountPubkey: mintKey.publicKey, space: 82, lamports: await connection.getMinimumBalanceForRentExemption(82), programId: spl.TOKEN_PROGRAM_ID }),
+            spl.createInitializeMintInstruction(mintKey.publicKey, decimals, userPubKey, userPubKey)
+        );
+
+        // B. Metaplex Metadata V3 (Immutable)
+        const [metadataPDA] = solanaWeb3.PublicKey.findProgramAddressSync([Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mintKey.publicKey.toBuffer()], METADATA_PROGRAM_ID);
+
+        transaction.add(
+            window.mplTokenMetadata.createCreateMetadataAccountV3Instruction(
+                { metadata: metadataPDA, mint: mintKey.publicKey, mintAuthority: userPubKey, payer: userPubKey, updateAuthority: userPubKey },
+                { createMetadataAccountV3Args: { data: { name, symbol, uri: metadataUri, sellerFeeBasisPoints: 0, creators: null, collection: null, uses: null }, isMutable: false, collectionDetails: null } }
+            )
+        );
+
+        // --- 4. MINT & REVOKE ---
+        updateProgress(4, "MINTING & LOCKING...");
+        const ata = await spl.getAssociatedTokenAddress(mintKey.publicKey, userPubKey);
+        const totalAmount = supplyValue * (BigInt(10) ** BigInt(decimals));
+
+        transaction.add(
+            spl.createAssociatedTokenAccountInstruction(userPubKey, ata, userPubKey, mintKey.publicKey),
+            spl.createMintToInstruction(mintKey.publicKey, ata, userPubKey, totalAmount),
+            spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.MintTokens, null),
+            spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.FreezeAccount, null)
+        );
+
+        // --- 5. SIGN & CONFIRM ---
+        updateProgress(5, "WAITING FOR WALLET...");
+        transaction.partialSign(mintKey);
+        const signed = await window.solana.signTransaction(transaction);
+        const signature = await connection.sendRawTransaction(signed.serialize());
+        
+        await connection.confirmTransaction({ blockhash: latestBlockHash.blockhash, lastValidBlockHeight: latestBlockHash.lastValidBlockHeight, signature }, 'confirmed');
+
+        // SUCCESS
+        const ca = mintKey.publicKey.toBase58();
+        log(`<span style='color:#14f195'><b>SUCCESS!</b></span> CA: <code>${ca}</code>`);
+        window.open(`https://solscan.io/token/${ca}`, '_blank');
+        window.open(`https://dexscreener.com/solana/${ca}`, '_blank');
+        
+        alert(`Launch Berhasil! Token ${name} kini Live & Immutable.`);
+
+    } catch (err) { 
+        log(`<span style='color:red'>FAILED: ${err.message}</span>`); 
+        alert(err.message);
+    } finally { 
+        btn.dataset.loading = "0";
+        btn.disabled = false; 
+        btn.innerText = "LAUNCH TOKEN (0.3 SOL)"; 
     }
 };
-        const resp = await window.solana.connect();
-        userPubKey = resp.publicKey;
-        document.getElementById('btnConnect').innerText = "Wallet Connected ✅";
-        document.getElementById('btnConnect').style.background = "#7d33ff";
-        updateLog("Wallet terhubung: " + userPubKey.toString().substring(0, 8) + "...");
-    } catch (err) {
-        updateLog("Gagal connect: " + err.message);
-    }
-};
-
-    document.getElementById('btnConnect').onclick = async () => {
-        try {
-            const resp = await window.solana.connect();
-            userPubKey = resp.publicKey;
-            document.getElementById('btnConnect').innerText = "Wallet Connected ✅";
-            updateLog("Wallet: " + userPubKey.toBase58().slice(0,6) + "...");
-        } catch (err) { alert("Gagal konek!"); }
-    };
-
-    async function uploadIPFS(file, name, symbol, desc) {
-        updateLog("Uploading to IPFS...");
-        const formData = new FormData();
-        formData.append('file', file);
-        const imgRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
-            method: 'POST', headers: { Authorization: `Bearer ${PINATA_JWT}` }, body: formData
-        });
-        const imgData = await imgRes.json();
-        const imageUrl = `https://gateway.pinata.cloud/ipfs/${imgData.IpfsHash}`;
-
-        const metaJSON = {
-            name: name, symbol: symbol, description: desc, image: imageUrl,
-            extensions: {
-                website: document.getElementById('website').value,
-                twitter: document.getElementById('twitter').value,
-                telegram: document.getElementById('telegram').value,
-                discord: document.getElementById('discord').value
-            }
-        };
-        const jsonRes = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
-            method: 'POST', headers: { Authorization: `Bearer ${PINATA_JWT}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(metaJSON)
-        });
-        const jsonData = await jsonRes.json();
-        return `https://gateway.pinata.cloud/ipfs/${jsonData.IpfsHash}`;
-    }
-
-    document.getElementById('btnCreate').onclick = async () => {
-        // AMBIL LIBRARY DI DALAM KLIK
-        const splToken = getSplToken();
-        if (!splToken) return alert("Library Solana belum siap, coba klik lagi dalam 3 detik!");
-
-        if (!userPubKey) return alert("Connect Wallet!");
-        const file = document.getElementById('logoFile').files[0];
-        if (!file) return alert("Pilih Logo!");
-
-        const btn = document.getElementById('btnCreate');
-        btn.disabled = true;
-        btn.innerText = "PROSES...";
-
-        try {
-            const connection = new solanaWeb3.Connection(HELIUS_RPC, "confirmed");
-            const metadataUri = await uploadIPFS(file, document.getElementById('name').value, document.getElementById('symbol').value, document.getElementById('desc').value);
-
-            updateLog("Membangun Transaksi...");
-            const mintKeypair = solanaWeb3.Keypair.generate();
-            const transaction = new solanaWeb3.Transaction();
-
-            // 1. Fee
-            transaction.add(solanaWeb3.SystemProgram.transfer({
-                fromPubkey: userPubKey, toPubkey: new solanaWeb3.PublicKey(OWNER_FEE_DEST),
-                lamports: 0.3 * solanaWeb3.LAMPORTS_PER_SOL
-            }));
-
-            // 2. Mint
-            const decimals = parseInt(document.getElementById('decimals').value);
-            transaction.add(
-                solanaWeb3.SystemProgram.createAccount({
-                    fromPubkey: userPubKey, newAccountPubkey: mintKeypair.publicKey,
-                    space: 82, lamports: await connection.getMinimumBalanceForRentExemption(82),
-                    programId: splToken.TOKEN_PROGRAM_ID,
-                }),
-                splToken.createInitializeMintInstruction(mintKeypair.publicKey, decimals, userPubKey, userPubKey)
-            );
-
-            // 3. Metadata
-            const [metadataPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
-                [Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mintKeypair.publicKey.toBuffer()],
-                METADATA_PROGRAM_ID
-            );
-            transaction.add(mplTokenMetadata.createCreateMetadataAccountV3Instruction(
-                { metadata: metadataPDA, mint: mintKeypair.publicKey, mintAuthority: userPubKey, payer: userPubKey, updateAuthority: userPubKey },
-                { createMetadataAccountV3Args: { data: { name: document.getElementById('name').value, symbol: document.getElementById('symbol').value, uri: metadataUri, sellerFeeBasisPoints: 0, creators: null, collection: null, uses: null }, isMutable: !document.getElementById('revUpdate').checked, collectionDetails: null } }
-            ));
-
-            // 4. Supply
-            const ata = await splToken.getAssociatedTokenAddress(mintKeypair.publicKey, userPubKey);
-            transaction.add(
-                splToken.createAssociatedTokenAccountInstruction(userPubKey, ata, userPubKey, mintKeypair.publicKey),
-                splToken.createMintToInstruction(mintKeypair.publicKey, ata, userPubKey, BigInt(document.getElementById('supply').value) * BigInt(10 ** decimals))
-            );
-
-            // 5. Revoke
-            if(document.getElementById('revMint').checked) transaction.add(splToken.createSetAuthorityInstruction(mintKeypair.publicKey, userPubKey, splToken.AuthorityType.MintTokens, null));
-            if(document.getElementById('revFreeze').checked) transaction.add(splToken.createSetAuthorityInstruction(mintKeypair.publicKey, userPubKey, splToken.AuthorityType.FreezeAccount, null));
-
-            updateLog("Silakan Approve di Phantom...");
-            const { signature } = await window.solana.signAndSendTransaction(transaction, [mintKeypair]);
-            updateLog("Sedang diproses...");
-            await connection.confirmTransaction(signature);
-
-            updateLog("<b>BERHASIL!</b> CA: " + mintKeypair.publicKey.toBase58());
-            alert("Token Berhasil!");
-
-        } catch (err) { updateLog("Error: " + err.message); }
-        finally { btn.disabled = false; btn.innerText = "LAUNCH TOKEN (0.3 SOL)"; }
-    };
-</script>
-</body>
-</html>
