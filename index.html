@@ -66,8 +66,9 @@
 <script>
     // 1. Inisialisasi Buffer dan Library (WAJIB ADA PALING ATAS)
     window.Buffer = buffer.Buffer;
-    const splToken = window.splToken; // Fix error "splToken is not defined"
-    const mplTokenMetadata = window.mplTokenMetadata;
+    const splToken = window.splToken;
+// Definisikan MINT_SIZE secara manual agar script tidak bingung
+const MINT_SIZE = 82; // Standar ukuran Mint Account di Solana
 
     // 2. Konfigurasi ID & API
     const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
@@ -158,12 +159,18 @@
             const decimals = parseInt(document.getElementById('decimals').value);
             transaction.add(
                 solanaWeb3.SystemProgram.createAccount({
-                    fromPubkey: userPubKey, newAccountPubkey: mintKeypair.publicKey,
-                    space: splToken.MINT_SIZE,
-                    lamports: await splToken.getMinimumBalanceForRentExemptMint(connection),
+                    fromPubkey: userPubKey,
+                    newAccountPubkey: mintKeypair.publicKey,
+                    space: MINT_SIZE, 
+                    lamports: await connection.getMinimumBalanceForRentExemption(MINT_SIZE),
                     programId: splToken.TOKEN_PROGRAM_ID,
                 }),
-                splToken.createInitializeMintInstruction(mintKeypair.publicKey, decimals, userPubKey, userPubKey)
+                splToken.createInitializeMintInstruction(
+                    mintKeypair.publicKey, 
+                    decimals, 
+                    userPubKey, 
+                    userPubKey
+                )
             );
 
             // 3. CREATE METADATA V3
