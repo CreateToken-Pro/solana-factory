@@ -2,40 +2,64 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Solana Factory Pro | Metadata V3 & Modern SPL</title>
+    <title>Solana Factory v15 | Full Social Metadata</title>
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <script src="https://unpkg.com/@solana/spl-token@0.4.0/lib/index.iife.min.js"></script>
     <script src="https://bundle.run/buffer@6.0.3"></script>
     <script src="https://unpkg.com/@metaplex-foundation/mpl-token-metadata@2.13.0/dist/index.iife.min.js"></script>
     <style>
         :root { --green: #14f195; --purple: #9945ff; }
-        body { font-family: sans-serif; background: #0b0b0b; color: white; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 500px; background: #121212; padding: 25px; border-radius: 20px; border: 1px solid var(--green); }
-        input, textarea { width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #333; color: white; border-radius: 10px; margin-bottom: 10px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 16px; width: 100%; }
-        .btn-create { background: var(--green); color: black; margin-top: 10px; }
-        #status { font-size: 11px; color: #888; margin-top: 10px; background: #000; padding: 10px; border-radius: 8px; border: 1px solid #333; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0b0b0b; color: white; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 550px; background: #121212; padding: 25px; border-radius: 20px; border: 1px solid #333; }
+        .preview-box { width: 70px; height: 70px; border-radius: 50%; background: #1a1a1a; margin: 0 auto 15px; border: 2px dashed var(--green); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .preview-box img { width: 100%; height: 100%; object-fit: cover; }
+        input, textarea { width: 100%; padding: 12px; background: #1a1a1a; border: 1px solid #333; color: white; border-radius: 10px; margin-bottom: 10px; box-sizing: border-box; font-size: 14px; }
+        .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 16px; background: var(--green); color: black; transition: 0.3s; }
+        .btn:hover { filter: brightness(1.2); transform: translateY(-2px); }
+        .auth-card { background: #1a1a1a; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #333; font-size: 12px; }
+        #log { font-size: 11px; color: #888; margin-top: 15px; background: #000; padding: 10px; border-radius: 8px; min-height: 50px; border: 1px solid #222; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="text-align:center; color:var(--green)">Solana Factory v10</h2>
+    <h2 style="text-align:center; color:var(--green); margin-bottom:5px;">Solana Token Creator</h2>
+    <p style="text-align:center; font-size:12px; color:#666; margin-bottom:20px;">v15: Metadata Extensions Support</p>
     
-    <button id="btnConnect" class="btn" style="background:var(--purple); color:white; margin-bottom:15px;">Connect Phantom</button>
+    <div class="preview-box"><img id="preview" style="display:none"></div>
+    
+    <button id="btnConnect" class="btn" style="background:var(--purple); color:white; margin-bottom:15px;">1. Connect Phantom Wallet</button>
 
     <div id="formArea">
-        <input type="text" id="name" placeholder="Token Name">
-        <input type="text" id="symbol" placeholder="Symbol">
-        <textarea id="desc" placeholder="Metadata JSON URI (e.g. https://ipfs.io/ipfs/...)"></textarea>
+        <input type="text" id="name" placeholder="Token Name (e.g. Doge Gold)">
+        <input type="text" id="symbol" placeholder="Symbol (e.g. DOGEG)">
+        <textarea id="desc" placeholder="Token Description..."></textarea>
         
+        <label style="font-size:11px; color:var(--green); margin-left:5px;">Logo Image</label>
+        <input type="file" id="logoFile" accept="image/*">
+
+        <p style="font-size:12px; color:var(--purple); font-weight:bold; margin: 10px 5px;">Social Links (Metaplex Extensions)</p>
+        <div class="social-grid">
+            <input type="text" id="website" placeholder="Website URL">
+            <input type="text" id="twitter" placeholder="Twitter URL">
+            <input type="text" id="telegram" placeholder="Telegram URL">
+            <input type="text" id="discord" placeholder="Discord URL">
+        </div>
+
         <div style="display:flex; gap:10px">
             <input type="number" id="supply" value="1000000000">
             <input type="number" id="decimals" value="9">
         </div>
 
-        <button id="btnCreate" class="btn btn-create">DEPLOY REAL TOKEN</button>
-        <div id="status">Status: Wallet Not Connected</div>
+        <div class="auth-card">
+            <div style="margin-bottom:8px"><input type="checkbox" id="revMint" checked> Revoke Mint Authority (Fixed Supply)</div>
+            <div style="margin-bottom:8px"><input type="checkbox" id="revFreeze" checked> Revoke Freeze Authority (Safe)</div>
+            <div><input type="checkbox" id="revUpdate" checked> Revoke Metadata Authority (Immutable)</div>
+        </div>
+
+        <button id="btnCreate" class="btn">LAUNCH TOKEN WITH SOCIALS</button>
+        <div id="log">Status: Waiting for wallet connection...</div>
     </div>
 </div>
 
@@ -43,109 +67,136 @@
     window.Buffer = buffer.Buffer;
     const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
     const OWNER_FEE_DEST = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8";
+    const PINATA_JWT = "PASTE_PINATA_JWT_LO_DISINI";
 
     let userPubKey = null;
-    const setStatus = (m) => { document.getElementById('status').innerText = `Status: ${m}`; };
+    const updateLog = (m) => { document.getElementById('log').innerHTML += `> ${m}<br>`; };
+
+    document.getElementById('logoFile').onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            document.getElementById('preview').src = URL.createObjectURL(file);
+            document.getElementById('preview').style.display = 'block';
+        }
+    };
 
     document.getElementById('btnConnect').onclick = async () => {
         const resp = await window.solana.connect();
         userPubKey = resp.publicKey;
-        setStatus("Wallet Connected");
+        document.getElementById('btnConnect').innerText = "Wallet Connected ✅";
     };
+
+    // FUNGSI UPLOAD DENGAN EXTENSIONS (Poin 4)
+    async function uploadProcess(file, name, symbol, desc) {
+        updateLog("Uploading Image to IPFS...");
+        const formData = new FormData();
+        formData.append('file', file);
+        const imgRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+            method: 'POST', headers: { Authorization: `Bearer ${PINATA_JWT}` }, body: formData
+        });
+        const imgData = await imgRes.json();
+        const imageUrl = `https://gateway.pinata.cloud/ipfs/${imgData.IpfsHash}`;
+
+        updateLog("Creating Metadata JSON with Extensions...");
+        const metaJSON = {
+            name: name,
+            symbol: symbol,
+            description: desc,
+            image: imageUrl,
+            extensions: {
+                website: document.getElementById('website').value,
+                twitter: document.getElementById('twitter').value,
+                telegram: document.getElementById('telegram').value,
+                discord: document.getElementById('discord').value
+            }
+        };
+
+        const jsonRes = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
+            method: 'POST', headers: { Authorization: `Bearer ${PINATA_JWT}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(metaJSON)
+        });
+        const jsonData = await jsonRes.json();
+        return `https://gateway.pinata.cloud/ipfs/${jsonData.IpfsHash}`;
+    }
 
     document.getElementById('btnCreate').onclick = async () => {
         if (!userPubKey) return alert("Connect Wallet!");
+        const file = document.getElementById('logoFile').files[0];
+        if (!file) return alert("Please select a Logo!");
+
         const btn = document.getElementById('btnCreate');
         btn.disabled = true;
+        btn.innerText = "LAUNCHING...";
 
         try {
+            const metadataUri = await uploadProcess(
+                file, 
+                document.getElementById('name').value, 
+                document.getElementById('symbol').value, 
+                document.getElementById('desc').value
+            );
+            
             const connection = new solanaWeb3.Connection("https://api.mainnet-beta.solana.com", "confirmed");
             const mintKeypair = solanaWeb3.Keypair.generate();
-            const decimals = parseInt(document.getElementById('decimals').value);
-            const supply = BigInt(document.getElementById('supply').value) * BigInt(10 ** decimals);
-
-            setStatus("Building Atomic Transaction...");
             const transaction = new solanaWeb3.Transaction();
 
-            // 1. Fee Transfer (0.30 SOL)
+            // 1. SERVICE FEE
             transaction.add(solanaWeb3.SystemProgram.transfer({
-                fromPubkey: userPubKey,
-                toPubkey: new solanaWeb3.PublicKey(OWNER_FEE_DEST),
+                fromPubkey: userPubKey, toPubkey: new solanaWeb3.PublicKey(OWNER_FEE_DEST),
                 lamports: 0.3 * solanaWeb3.LAMPORTS_PER_SOL
             }));
 
-            // 2. Create Mint Account
-            const lamports = await splToken.getMinimumBalanceForRentExemptMint(connection);
+            // 2. CREATE MINT
+            const decimals = parseInt(document.getElementById('decimals').value);
             transaction.add(
                 solanaWeb3.SystemProgram.createAccount({
-                    fromPubkey: userPubKey,
-                    newAccountPubkey: mintKeypair.publicKey,
+                    fromPubkey: userPubKey, newAccountPubkey: mintKeypair.publicKey,
                     space: splToken.MINT_SIZE,
-                    lamports,
+                    lamports: await splToken.getMinimumBalanceForRentExemptMint(connection),
                     programId: splToken.TOKEN_PROGRAM_ID,
                 }),
                 splToken.createInitializeMintInstruction(mintKeypair.publicKey, decimals, userPubKey, userPubKey)
             );
 
-            // 3. Create Associated Token Account (ATA)
-            const ata = await splToken.getAssociatedTokenAddress(mintKeypair.publicKey, userPubKey);
-            transaction.add(
-                splToken.createAssociatedTokenAccountInstruction(userPubKey, ata, userPubKey, mintKeypair.publicKey)
-            );
-
-            // 4. Mint Supply to Wallet
-            transaction.add(
-                splToken.createMintToInstruction(mintKeypair.publicKey, ata, userPubKey, supply)
-            );
-
-            // --- 5. METADATA V3 INSTRUCTION (Poin 2 - REAL) ---
+            // 3. CREATE METADATA V3
             const [metadataPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
                 [Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mintKeypair.publicKey.toBuffer()],
                 METADATA_PROGRAM_ID
             );
 
-            const metadataData = {
-                name: document.getElementById('name').value,
-                symbol: document.getElementById('symbol').value,
-                uri: document.getElementById('desc').value, // Link IPFS JSON
-                sellerFeeBasisPoints: 0,
-                creators: null,
-                collection: null,
-                uses: null
-            };
+            const isMutable = !document.getElementById('revUpdate').checked;
 
-            const createMetadataIx = mplTokenMetadata.createCreateMetadataAccountV3Instruction(
-                {
-                    metadata: metadataPDA,
-                    mint: mintKeypair.publicKey,
-                    mintAuthority: userPubKey,
-                    payer: userPubKey,
-                    updateAuthority: userPubKey,
-                },
-                {
-                    createMetadataAccountV3Args: {
-                        data: metadataData,
-                        isMutable: true,
-                        collectionDetails: null
-                    }
-                }
+            transaction.add(mplTokenMetadata.createCreateMetadataAccountV3Instruction(
+                { metadata: metadataPDA, mint: mintKeypair.publicKey, mintAuthority: userPubKey, payer: userPubKey, updateAuthority: userPubKey },
+                { createMetadataAccountV3Args: { data: { name: document.getElementById('name').value, symbol: document.getElementById('symbol').value, uri: metadataUri, sellerFeeBasisPoints: 0, creators: null, collection: null, uses: null }, isMutable: isMutable, collectionDetails: null } }
+            ));
+
+            // 4. MINT SUPPLY
+            const ata = await splToken.getAssociatedTokenAddress(mintKeypair.publicKey, userPubKey);
+            transaction.add(
+                splToken.createAssociatedTokenAccountInstruction(userPubKey, ata, userPubKey, mintKeypair.publicKey),
+                splToken.createMintToInstruction(mintKeypair.publicKey, ata, userPubKey, BigInt(document.getElementById('supply').value) * BigInt(10 ** decimals))
             );
-            transaction.add(createMetadataIx);
 
-            setStatus("Waiting for Phantom Approval...");
+            // 5. REVOKE AUTHORITIES
+            if(document.getElementById('revMint').checked) 
+                transaction.add(splToken.createSetAuthorityInstruction(mintKeypair.publicKey, userPubKey, splToken.AuthorityType.MintTokens, null));
+            if(document.getElementById('revFreeze').checked) 
+                transaction.add(splToken.createSetAuthorityInstruction(mintKeypair.publicKey, userPubKey, splToken.AuthorityType.FreezeAccount, null));
+
+            updateLog("Transaction Prepared. Please sign in Phantom...");
             const { signature } = await window.solana.signAndSendTransaction(transaction, [mintKeypair]);
-            
-            setStatus("Confirming on Blockchain...");
+            updateLog("Confirming on Blockchain...");
             await connection.confirmTransaction(signature);
             
-            alert(`SUCCESS! Token CA: ${mintKeypair.publicKey.toBase58()}`);
-            setStatus("Deployment Complete!");
+            updateLog(`SUCCESS! Token CA: ${mintKeypair.publicKey.toBase58()}`);
+            alert("TOKEN LAUNCHED WITH SOCIALS!");
 
         } catch (err) {
-            console.error(err);
-            setStatus(`Error: ${err.message}`);
+            updateLog(`Error: ${err.message}`);
         } finally {
             btn.disabled = false;
+            btn.innerText = "LAUNCH TOKEN WITH SOCIALS";
         }
     };
 </script>
