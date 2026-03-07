@@ -3,135 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solana Token Factory v16</title>
+    <title>Solana Factory v17 | No-Auth RPC</title>
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <script src="https://unpkg.com/@solana/spl-token@0.4.0/lib/index.iife.min.js"></script>
     <script src="https://bundle.run/buffer@6.0.3"></script>
     <script src="https://unpkg.com/@metaplex-foundation/mpl-token-metadata@2.13.0/dist/index.iife.min.js"></script>
     
     <style>
-        :root { --neon: #14f195; --bg: #0a0a0a; --card: #151515; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: white; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .app-card { width: 100%; max-width: 500px; background: var(--card); padding: 25px; border-radius: 24px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        .preview-circle { width: 80px; height: 80px; border-radius: 50%; background: #222; margin: 0 auto 20px; border: 2px dashed var(--neon); overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        .preview-circle img { width: 100%; height: 100%; object-fit: cover; }
-        input, textarea { width: 100%; padding: 14px; background: #222; border: 1px solid #333; color: white; border-radius: 12px; margin-bottom: 12px; box-sizing: border-box; font-size: 14px; outline: none; }
+        :root { --neon: #14f195; --purple: #9945ff; --bg: #0d0d0d; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: white; margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .main-card { width: 100%; max-width: 480px; background: #161616; padding: 20px; border-radius: 20px; border: 1px solid #2a2a2a; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .logo-preview { width: 70px; height: 70px; border-radius: 50%; background: #222; margin: 0 auto 15px; border: 2px dashed var(--neon); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .logo-preview img { width: 100%; height: 100%; object-fit: cover; }
+        input, textarea { width: 100%; padding: 12px; background: #202020; border: 1px solid #333; color: white; border-radius: 10px; margin-bottom: 10px; box-sizing: border-box; font-size: 14px; outline: none; }
         input:focus { border-color: var(--neon); }
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; margin-top: 10px; }
-        #btnConnect { background: #9945ff; color: white; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s; margin-top: 5px; }
+        #btnConnect { background: var(--purple); color: white; }
         #btnLaunch { background: var(--neon); color: black; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        #status-box { background: #000; padding: 15px; border-radius: 12px; font-size: 11px; font-family: monospace; color: #888; margin-top: 20px; border: 1px solid #222; max-height: 100px; overflow-y: auto; }
-        .revokes { background: #1a1a1a; padding: 12px; border-radius: 12px; font-size: 13px; margin-bottom: 15px; border: 1px solid #252525; }
-        .row { display: flex; gap: 10px; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        #console { background: #000; padding: 12px; border-radius: 10px; font-size: 11px; font-family: monospace; color: #00ff00; margin-top: 15px; border: 1px solid #1a1a1a; max-height: 120px; overflow-y: auto; line-height: 1.5; }
+        .auth-settings { background: #1f1f1f; padding: 12px; border-radius: 10px; font-size: 12px; margin-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     </style>
 </head>
 <body>
 
-<div class="app-card">
-    <h2 style="text-align:center; margin-top:0; color:var(--neon)">Token Creator</h2>
+<div class="main-card">
+    <h3 style="text-align:center; margin-top:0; color:var(--neon)">Solana Token Creator</h3>
     
-    <div class="preview-circle"><img id="preview" style="display:none"></div>
+    <div class="logo-preview"><img id="imgPrev" style="display:none"></div>
     
     <button id="btnConnect" class="btn">1. Hubungkan Phantom</button>
 
-    <div id="form-ui" style="margin-top:20px;">
-        <input type="text" id="name" placeholder="Nama Token (Contoh: Garuda)">
-        <input type="text" id="symbol" placeholder="Simbol (Contoh: GRD)">
-        <textarea id="desc" placeholder="Deskripsi token kamu..."></textarea>
+    <div style="margin-top:15px;">
+        <input type="text" id="tName" placeholder="Nama Token">
+        <input type="text" id="tSymbol" placeholder="Simbol (Max 10)">
+        <textarea id="tDesc" placeholder="Deskripsi..."></textarea>
         
-        <label style="font-size: 12px; color: #888; margin-bottom: 5px; display: block;">Upload Logo:</label>
-        <input type="file" id="file" accept="image/*">
+        <label style="font-size: 11px; color: #777;">Pilih Logo:</label>
+        <input type="file" id="tFile" accept="image/*">
 
-        <div class="row">
-            <input type="number" id="supply" value="1000000000" placeholder="Supply">
-            <input type="number" id="decimals" value="9" placeholder="Decimals">
+        <div class="grid">
+            <input type="number" id="tSupply" value="1000000000" title="Supply">
+            <input type="number" id="tDec" value="9" title="Decimals">
         </div>
 
-        <div class="revokes">
-            <label style="display:block; margin-bottom:5px;"><input type="checkbox" id="revMint" checked> Revoke Mint (Fix Supply)</label>
-            <label style="display:block; margin-bottom:5px;"><input type="checkbox" id="revFreeze" checked> Revoke Freeze (LP Burn Ready)</label>
+        <div class="auth-settings">
+            <label style="display:block; margin-bottom:4px;"><input type="checkbox" id="revMint" checked> Revoke Mint (Fixed Supply)</label>
+            <label style="display:block; margin-bottom:4px;"><input type="checkbox" id="revFreeze" checked> Revoke Freeze (Security)</label>
             <label style="display:block;"><input type="checkbox" id="revMeta" checked> Revoke Metadata (Immutable)</label>
         </div>
 
         <button id="btnLaunch" class="btn">LAUNCH TOKEN (0.3 SOL)</button>
     </div>
 
-    <div id="status-box">Status: Menunggu Wallet...</div>
+    <div id="console">Status: Siap meluncur...</div>
 </div>
 
 <script>
     window.Buffer = buffer.Buffer;
-    const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
-    const FEE_DESTINATION = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8";
+    const METAPLEX_ID = new solanaWeb3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
+    const FEE_WALLET = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8";
     const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
 
-    // ANTI ERROR 401: List RPC Alternatif
-    const RPC_LIST = [
+    // ANTI ERROR 401: Jalur RPC Publik Tanpa Token
+    const PUBLIC_RPCs = [
         "https://api.mainnet-beta.solana.com",
         "https://solana-mainnet.rpc.blink.xyz",
         "https://rpc.ankr.com/solana"
     ];
 
-    let userWallet = null;
-    const log = (msg) => { 
-        const box = document.getElementById('status-box');
-        box.innerHTML += `> ${msg}<br>`;
-        box.scrollTop = box.scrollHeight;
+    let userKey = null;
+    const print = (m) => { 
+        const c = document.getElementById('console');
+        c.innerHTML += `> ${m}<br>`;
+        c.scrollTop = c.scrollHeight;
     };
 
-    document.getElementById('file').onchange = (e) => {
+    document.getElementById('tFile').onchange = (e) => {
         const url = URL.createObjectURL(e.target.files[0]);
-        document.getElementById('preview').src = url;
-        document.getElementById('preview').style.display = 'block';
+        document.getElementById('imgPrev').src = url;
+        document.getElementById('imgPrev').style.display = 'block';
     };
 
     document.getElementById('btnConnect').onclick = async () => {
         try {
             const resp = await window.solana.connect();
-            userWallet = resp.publicKey;
-            document.getElementById('btnConnect').innerText = "Wallet: " + userWallet.toBase58().slice(0,6) + "...";
-            log("Wallet Terhubung!");
-        } catch (err) { log("Gagal Connect!"); }
+            userKey = resp.publicKey;
+            document.getElementById('btnConnect').innerText = "Wallet OK: " + userKey.toBase58().slice(0,4) + "..";
+            print("Wallet terhubung!");
+        } catch (e) { print("Gagal connect wallet!"); }
     };
 
-    async function getWorkingConnection() {
-        for (let rpc of RPC_LIST) {
+    async function getSafeConnection() {
+        for (let rpc of PUBLIC_RPCs) {
             try {
                 const conn = new solanaWeb3.Connection(rpc, "confirmed");
                 await conn.getLatestBlockhash();
-                log("RPC Aktif: " + new URL(rpc).hostname);
+                print("Terhubung ke: " + new URL(rpc).hostname);
                 return conn;
-            } catch (e) { log("Mencoba RPC lain..."); }
+            } catch (e) { print("Mencoba jalur cadangan..."); }
         }
-        throw new Error("Semua RPC sibuk!");
+        throw new Error("Semua jalur penuh. Coba lagi 1 menit lagi.");
     }
 
     document.getElementById('btnLaunch').onclick = async () => {
-        if (!userWallet) return alert("Connect Wallet Dulu!");
-        const fileInput = document.getElementById('file').files[0];
-        if (!fileInput) return alert("Pilih Gambar!");
+        if (!userKey) return alert("Hubungkan Wallet!");
+        const file = document.getElementById('tFile').files[0];
+        if (!file) return alert("Pilih Logo!");
 
         const btn = document.getElementById('btnLaunch');
         btn.disabled = true;
         btn.innerText = "SEDANG PROSES...";
 
         try {
-            const conn = await getWorkingConnection();
+            const conn = await getSafeConnection();
             
-            log("Uploading Metadata...");
-            const formData = new FormData();
-            formData.append('file', fileInput);
+            print("Mengunggah metadata ke IPFS...");
+            const fd = new FormData();
+            fd.append('file', file);
             
             const imgRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
-                method: 'POST', headers: { Authorization: `Bearer ${PINATA_JWT}` }, body: formData
+                method: 'POST', headers: { Authorization: `Bearer ${PINATA_JWT}` }, body: fd
             });
             const imgHash = (await imgRes.json()).IpfsHash;
 
             const metaJSON = {
-                name: document.getElementById('name').value,
-                symbol: document.getElementById('symbol').value,
-                description: document.getElementById('desc').value,
+                name: document.getElementById('tName').value,
+                symbol: document.getElementById('tSymbol').value,
+                description: document.getElementById('tDesc').value,
                 image: `https://gateway.pinata.cloud/ipfs/${imgHash}`
             };
 
@@ -141,49 +141,49 @@
             });
             const metaUri = `https://gateway.pinata.cloud/ipfs/${(await jsonRes.json()).IpfsHash}`;
 
-            log("Membangun Transaksi...");
+            print("Menyiapkan transaksi...");
             const mintKp = solanaWeb3.Keypair.generate();
             const tx = new solanaWeb3.Transaction();
 
-            // 1. Fee System
+            // 1. Fee Service
             tx.add(solanaWeb3.SystemProgram.transfer({
-                fromPubkey: userWallet, toPubkey: new solanaWeb3.PublicKey(FEE_DESTINATION),
+                fromPubkey: userKey, toPubkey: new solanaWeb3.PublicKey(FEE_WALLET),
                 lamports: 0.3 * solanaWeb3.LAMPORTS_PER_SOL
             }));
 
-            // 2. Pembuatan Mint
-            const dec = parseInt(document.getElementById('decimals').value);
+            // 2. Buat Mint Account
+            const dec = parseInt(document.getElementById('tDec').value);
             const rent = await conn.getMinimumBalanceForRentExemption(82);
             tx.add(
-                solanaWeb3.SystemProgram.createAccount({ fromPubkey: userWallet, newAccountPubkey: mintKp.publicKey, space: 82, lamports: rent, programId: splToken.TOKEN_PROGRAM_ID }),
-                splToken.createInitializeMintInstruction(mintKp.publicKey, dec, userWallet, userWallet)
+                solanaWeb3.SystemProgram.createAccount({ fromPubkey: userKey, newAccountPubkey: mintKp.publicKey, space: 82, lamports: rent, programId: splToken.TOKEN_PROGRAM_ID }),
+                splToken.createInitializeMintInstruction(mintKp.publicKey, dec, userKey, userKey)
             );
 
-            // 3. Metadata
-            const [mPDA] = solanaWeb3.PublicKey.findProgramAddressSync([Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mintKp.publicKey.toBuffer()], METADATA_PROGRAM_ID);
+            // 3. Metadata Account
+            const [mPDA] = solanaWeb3.PublicKey.findProgramAddressSync([Buffer.from("metadata"), METAPLEX_ID.toBuffer(), mintKp.publicKey.toBuffer()], METAPLEX_ID);
             tx.add(mplTokenMetadata.createCreateMetadataAccountV3Instruction(
-                { metadata: mPDA, mint: mintKp.publicKey, mintAuthority: userWallet, payer: userWallet, updateAuthority: userWallet },
+                { metadata: mPDA, mint: mintKp.publicKey, mintAuthority: userKey, payer: userKey, updateAuthority: userKey },
                 { createMetadataAccountV3Args: { data: { name: metaJSON.name, symbol: metaJSON.symbol, uri: metaUri, sellerFeeBasisPoints: 0, creators: null, collection: null, uses: null }, isMutable: !document.getElementById('revMeta').checked, collectionDetails: null } }
             ));
 
-            // 4. Minting Supply
-            const ata = await splToken.getAssociatedTokenAddress(mintKp.publicKey, userWallet);
+            // 4. Token Account & Minting
+            const ata = await splToken.getAssociatedTokenAddress(mintKp.publicKey, userKey);
             tx.add(
-                splToken.createAssociatedTokenAccountInstruction(userWallet, ata, userWallet, mintKp.publicKey),
-                splToken.createMintToInstruction(mintKp.publicKey, ata, userWallet, BigInt(document.getElementById('supply').value) * BigInt(10 ** dec))
+                splToken.createAssociatedTokenAccountInstruction(userKey, ata, userKey, mintKp.publicKey),
+                splToken.createMintToInstruction(mintKp.publicKey, ata, userKey, BigInt(document.getElementById('tSupply').value) * BigInt(10 ** dec))
             );
 
-            // 5. Authority Revokes
-            if(document.getElementById('revMint').checked) tx.add(splToken.createSetAuthorityInstruction(mintKp.publicKey, userWallet, splToken.AuthorityType.MintTokens, null));
-            if(document.getElementById('revFreeze').checked) tx.add(splToken.createSetAuthorityInstruction(mintKp.publicKey, userWallet, splToken.AuthorityType.FreezeAccount, null));
+            // 5. Revokes
+            if(document.getElementById('revMint').checked) tx.add(splToken.createSetAuthorityInstruction(mintKp.publicKey, userKey, splToken.AuthorityType.MintTokens, null));
+            if(document.getElementById('revFreeze').checked) tx.add(splToken.createSetAuthorityInstruction(mintKp.publicKey, userKey, splToken.AuthorityType.FreezeAccount, null));
 
-            log("Konfirmasi di Phantom...");
+            print("Konfirmasi di Phantom kamu...");
             const { signature } = await window.solana.signAndSendTransaction(tx, [mintKp]);
-            log("Berhasil! TX: " + signature.slice(0,10) + "...");
-            alert("TOKEN BERHASIL DIBUAT!\nMint Address: " + mintKp.publicKey.toBase58());
+            print("Berhasil! TX: " + signature.slice(0,8) + "...");
+            alert("SUKSES!\nAlamat Token: " + mintKp.publicKey.toBase58());
 
         } catch (e) {
-            log("Error: " + e.message);
+            print("Error: " + e.message);
             console.error(e);
         } finally {
             btn.disabled = false;
