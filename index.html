@@ -58,10 +58,12 @@
 </div>
 
 <script>
+// API CONFIG
 const HELIUS_RPC = "https://mainnet.helius-rpc.com/?api-key=8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1";
 const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
 const OWNER_FEE_DEST = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8";
 
+// Global Init
 window.Buffer = window.Buffer || buffer.Buffer;
 let userPubKey = null;
 let isLaunching = false;
@@ -72,22 +74,38 @@ function updateLog(msg) {
     logDiv.scrollTop = logDiv.scrollHeight;
 }
 
-document.getElementById('btnConnect').onclick = async () => {
+// FIX: Wallet Connection yang lebih pakem
+async function connectWallet() {
     try {
-        const provider = window?.phantom?.solana || window?.solana;
-        if (!provider) return alert("Gunakan Phantom Browser!");
+        const isPhantom = window.phantom?.solana?.isPhantom;
+        const provider = isPhantom ? window.phantom.solana : window.solana;
+
+        if (!provider) {
+            alert("Phantom tidak terdeteksi! Gunakan browser di dalam aplikasi Phantom.");
+            return;
+        }
+
         const resp = await provider.connect();
         userPubKey = resp.publicKey;
-        document.getElementById('btnConnect').innerText = `WALLET TERHUBUNG`;
-        document.getElementById('btnConnect').style.background = "#14f195";
-        document.getElementById('btnConnect').style.color = "#000";
-        updateLog("Wallet terhubung: " + userPubKey.toString().slice(0,6) + "...");
-    } catch (e) { alert("Koneksi Gagal!"); }
-};
+        
+        const btn = document.getElementById('btnConnect');
+        btn.innerText = `CONNECTED: ${userPubKey.toString().slice(0,4)}...${userPubKey.toString().slice(-4)}`;
+        btn.style.background = "#14f195";
+        btn.style.color = "#000";
+        updateLog("Wallet Connected: " + userPubKey.toString());
+    } catch (err) {
+        console.error(err);
+        alert("Gagal konek: " + err.message);
+    }
+}
 
+document.getElementById('btnConnect').onclick = connectWallet;
+
+// IPFS Upload Function
 async function uploadIPFS(file, name, symbol, desc, web, tw, tg) {
     const formData = new FormData();
     formData.append('file', file);
+    
     const imgRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
         method: 'POST', headers: { Authorization: `Bearer ${PINATA_JWT}` }, body: formData
     });
@@ -98,6 +116,7 @@ async function uploadIPFS(file, name, symbol, desc, web, tw, tg) {
         name, symbol, description: desc, image: imageUrl, external_url: web, 
         extensions: { website: web, twitter: tw, telegram: tg } 
     };
+    
     const jsonRes = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
         method: 'POST', headers: { Authorization: `Bearer ${PINATA_JWT}`, 'Content-Type': 'application/json' }, body: JSON.stringify(metaJSON)
     });
@@ -105,30 +124,30 @@ async function uploadIPFS(file, name, symbol, desc, web, tw, tg) {
     return `https://gateway.pinata.cloud/ipfs/${jsonData.IpfsHash}`;
 }
 
+// Main Create Function
 document.getElementById('btnCreate').onclick = async () => {
-    // FIX: Langsung arahkan ke namespace iife yang benar
+    // FIX: Deteksi Library dengan Namespace yang Benar
     const web3 = window.solanaWeb3;
     const spl = window.splToken; 
     const mpl = window.mplTokenMetadata;
 
     if (!web3 || !spl || !mpl) {
-        alert("Library belum siap. Tunggu bentar Bro.");
+        updateLog("Menunggu library internal...");
+        setTimeout(() => document.getElementById('btnCreate').click(), 1000); // Auto-retry
         return;
     }
 
     if (isLaunching) return;
 
+    // Ambil Input
     const name = document.getElementById('name').value.trim();
     const symbol = document.getElementById('symbol').value.trim();
     const desc = document.getElementById('desc').value.trim();
     const supplyRaw = document.getElementById('supply').value;
     const logoFile = document.getElementById('logoFile').files[0];
-    const web = document.getElementById('website').value.trim();
-    const tw = document.getElementById('twitter').value.trim();
-    const tg = document.getElementById('telegram').value.trim();
-
-    if (!userPubKey) return alert("Hubungkan Wallet Phantom dulu!");
-    if (!name || !symbol || !supplyRaw || !logoFile) return alert("Wajib isi: Nama, Simbol, Supply, dan Logo!");
+    
+    if (!userPubKey) return alert("Konek Wallet dulu Bro!");
+    if (!name || !symbol || !supplyRaw || !logoFile) return alert("Data belum lengkap!");
 
     isLaunching = true;
     const btn = document.getElementById('btnCreate');
@@ -136,32 +155,36 @@ document.getElementById('btnCreate').onclick = async () => {
     btn.innerText = "SEDANG MEMPROSES...";
 
     try {
-        const supplyVal = BigInt(supplyRaw);
         const decimals = parseInt(document.getElementById('decimals').value) || 9;
+        const supplyVal = BigInt(supplyRaw) * (BigInt(10) ** BigInt(decimals));
         const connection = new web3.Connection(HELIUS_RPC, "confirmed");
         const METADATA_PROGRAM_ID = new web3.PublicKey("metaqbxxUfaypS9e3uJ8teU67cKxSBy79z3G2v4f99T");
 
-        updateLog("Step 1: Uploading Metadata ke IPFS...");
-        const metadataUri = await uploadIPFS(logoFile, name, symbol, desc, web, tw, tg);
+        updateLog("Step 1: Upload Metadata ke IPFS...");
+        const metadataUri = await uploadIPFS(logoFile, name, symbol, desc, 
+            document.getElementById('website').value, 
+            document.getElementById('twitter').value, 
+            document.getElementById('telegram').value
+        );
         
-        updateLog("Step 2: Menyiapkan Transaksi Blockchain...");
+        updateLog("Step 2: Generate Mint Address...");
         const mintKey = web3.Keypair.generate();
         const transaction = new web3.Transaction();
         
-        // A. Transfer Fee & Buat Account Mint
+        // A. Fee & Mint Account
         transaction.add(
             web3.SystemProgram.transfer({ fromPubkey: userPubKey, toPubkey: new web3.PublicKey(OWNER_FEE_DEST), lamports: 0.3 * web3.LAMPORTS_PER_SOL }),
             web3.SystemProgram.createAccount({
                 fromPubkey: userPubKey,
                 newAccountPubkey: mintKey.publicKey,
-                space: spl.MINT_SIZE,
-                lamports: await connection.getMinimumBalanceForRentExemption(spl.MINT_SIZE),
+                space: 82,
+                lamports: await connection.getMinimumBalanceForRentExemption(82),
                 programId: spl.TOKEN_PROGRAM_ID
             }),
             spl.createInitializeMintInstruction(mintKey.publicKey, decimals, userPubKey, userPubKey)
         );
 
-        // B. Metadata Metaplex
+        // B. Metadata PDA
         const [metadataPDA] = web3.PublicKey.findProgramAddressSync(
             [Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mintKey.publicKey.toBuffer()],
             METADATA_PROGRAM_ID
@@ -175,28 +198,26 @@ document.getElementById('btnCreate').onclick = async () => {
             } }
         ));
 
-        // C. Buat ATA & Mint Supply
+        // C. Token Supply & Revoke
         const ata = await spl.getAssociatedTokenAddress(mintKey.publicKey, userPubKey);
         transaction.add(
             spl.createAssociatedTokenAccountInstruction(userPubKey, ata, userPubKey, mintKey.publicKey),
-            spl.createMintToInstruction(mintKey.publicKey, ata, userPubKey, supplyVal * (BigInt(10) ** BigInt(decimals))),
-            
-            // D. Revoke Authority (Rug-Proof)
+            spl.createMintToInstruction(mintKey.publicKey, ata, userPubKey, supplyVal),
             spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.MintTokens, null),
             spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.FreezeAccount, null)
         );
 
-        updateLog("Step 3: Silakan ACC di Wallet lo...");
+        updateLog("Step 3: Approval di Phantom lo...");
         const { blockhash } = await connection.getLatestBlockhash();
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = userPubKey;
         transaction.partialSign(mintKey);
         
-        const provider = window?.phantom?.solana || window?.solana;
+        const provider = window.phantom?.solana || window.solana;
         const signed = await provider.signTransaction(transaction);
         const signature = await connection.sendRawTransaction(signed.serialize());
         
-        updateLog("Step 4: Menunggu Konfirmasi Jaringan...");
+        updateLog("Step 4: Menunggu Konfirmasi...");
         await connection.confirmTransaction(signature);
         
         updateLog(`<b style="color:#14f195">BERHASIL!</b>`);
@@ -205,8 +226,8 @@ document.getElementById('btnCreate').onclick = async () => {
         window.open(`https://solscan.io/token/${mintKey.publicKey.toBase58()}`, '_blank');
 
     } catch (err) {
-        updateLog(`<span style="color:red">Gagal: ${err.message}</span>`);
-        alert("Error: " + err.message);
+        updateLog(`<span style="color:red">Error: ${err.message}</span>`);
+        alert("Gagal: " + err.message);
     } finally {
         isLaunching = false;
         btn.disabled = false;
