@@ -25,6 +25,23 @@
         #previewContainer { text-align: center; margin-bottom: 15px; display: none; }
         #logoPreview { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #14f195; object-fit: cover; }
         .social-group { border: 1px dashed #444; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
+
+        /* --- STYLING BARU UNTUK PEMBERITAHUAN --- */
+        .security-badge {
+            background: rgba(20, 241, 149, 0.1);
+            border: 1px solid #14f195;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 11px;
+        }
+        .security-badge div {
+            margin-bottom: 4px;
+            color: #14f195;
+            display: flex;
+            align-items: center;
+        }
+        .security-badge span { margin-right: 8px; }
     </style>
 </head>
 <body>
@@ -62,6 +79,13 @@
             <label>DECIMALS:</label>
             <input id="decimals" type="number" value="9" min="0" max="9">
         </div>
+    </div>
+
+    <div class="security-badge">
+        <div><span>✔</span> Auto Revoke Mint Authority</div>
+        <div><span>✔</span> Auto Revoke Freeze Authority</div>
+        <div><span>✔</span> Mint Supply Otomatis</div>
+        <div style="color: #888; font-size: 9px; margin-top: 5px; font-style: italic;">*Token kamu akan 100% Aman & Rug-Proof.</div>
     </div>
 
     <button id="btnCreate">LAUNCH TOKEN (0.3 SOL)</button>
@@ -147,7 +171,6 @@ async function uploadIPFS(file, name, symbol, desc, web, tw, tg) {
 
 // MAIN LAUNCH FUNCTION
 document.getElementById('btnCreate').onclick = async () => {
-    // 1. CEK LIBRARY (Proteksi HP)
     if (typeof window.solanaWeb3 === 'undefined') {
         alert("Sabar, library Solana lagi loading... Tunggu 5 detik.");
         return;
@@ -188,16 +211,12 @@ document.getElementById('btnCreate').onclick = async () => {
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = userPubKey;
 
-        // --- INTRUKSI TRANSAKSI ---
         transaction.add(
-            // Fee 0.3 SOL
             solanaWeb3.SystemProgram.transfer({ fromPubkey: userPubKey, toPubkey: new solanaWeb3.PublicKey(OWNER_FEE_DEST), lamports: 0.3 * solanaWeb3.LAMPORTS_PER_SOL }),
-            // Bikin Akun Mint
             solanaWeb3.SystemProgram.createAccount({ fromPubkey: userPubKey, newAccountPubkey: mintKey.publicKey, space: 82, lamports: await connection.getMinimumBalanceForRentExemption(82), programId: spl.TOKEN_PROGRAM_ID }),
             spl.createInitializeMintInstruction(mintKey.publicKey, decimals, userPubKey, userPubKey)
         );
 
-        // Metadata Account
         const [metadataPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
             [Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mintKey.publicKey.toBuffer()], METADATA_PROGRAM_ID
         );
@@ -209,11 +228,11 @@ document.getElementById('btnCreate').onclick = async () => {
             )
         );
 
-        // Mint Supply & Revoke Authority (Biar Rug-Proof)
         const ata = await spl.getAssociatedTokenAddress(mintKey.publicKey, userPubKey);
         transaction.add(
             spl.createAssociatedTokenAccountInstruction(userPubKey, ata, userPubKey, mintKey.publicKey),
             spl.createMintToInstruction(mintKey.publicKey, ata, userPubKey, supplyVal * (BigInt(10) ** BigInt(decimals))),
+            // OTOMATIS REVOKE DISINI
             spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.MintTokens, null),
             spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.FreezeAccount, null)
         );
