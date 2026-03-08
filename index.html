@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solana Factory v43 | The Final Launch</title>
     <script src="https://bundle.run/buffer@6.0.3"></script>
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
@@ -9,18 +10,21 @@
     <script src="https://unpkg.com/@metaplex-foundation/mpl-token-metadata@2.13.0/dist/browser/index.iife.js"></script>
     
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: #ffffff; padding: 20px; display: flex; justify-content: center; }
-        .card { background: #1a1a1a; padding: 30px; border-radius: 15px; width: 100%; max-width: 450px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h2 { color: #14f195; text-align: center; margin-bottom: 25px; }
-        label { font-size: 12px; color: #9945FF; font-weight: bold; display: block; margin-bottom: 5px; }
-        input, textarea { width: 100%; margin-bottom: 15px; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #252525; color: white; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: #ffffff; padding: 10px; display: flex; justify-content: center; }
+        .card { background: #1a1a1a; padding: 20px; border-radius: 15px; width: 100%; max-width: 450px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h2 { color: #14f195; text-align: center; margin-bottom: 20px; font-size: 22px; }
+        label { font-size: 11px; color: #9945FF; font-weight: bold; display: block; margin-bottom: 5px; text-transform: uppercase; }
+        input, textarea { width: 100%; margin-bottom: 12px; padding: 10px; border-radius: 8px; border: 1px solid #333; background: #252525; color: white; box-sizing: border-box; font-size: 14px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         button { width: 100%; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; margin-bottom: 15px; }
-        #btnConnect { background: #9945FF; }
-        #btnCreate { background: #14f195; color: #000; font-size: 16px; }
-        #btnCreate:disabled { background: #444 !important; color: #888 !important; cursor: not-allowed; }
-        #log { padding: 15px; background: #000; border-radius: 8px; font-family: monospace; font-size: 11px; color: #00ff00; max-height: 120px; overflow-y: auto; border: 1px solid #222; }
+        #btnConnect { background: #9945FF; color: white; }
+        #btnCreate { background: #14f195; color: #000; font-size: 16px; border: 2px solid #14f195; }
+        #btnCreate:active { transform: scale(0.98); }
+        #btnCreate:disabled { background: #444 !important; border-color: #444 !important; color: #888 !important; cursor: not-allowed; }
+        #log { padding: 12px; background: #000; border-radius: 8px; font-family: monospace; font-size: 10px; color: #00ff00; max-height: 120px; overflow-y: auto; border: 1px solid #222; margin-top: 10px; }
         #previewContainer { text-align: center; margin-bottom: 15px; display: none; }
-        #logoPreview { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #14f195; object-fit: cover; }
+        #logoPreview { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #14f195; object-fit: cover; }
+        .social-group { border: 1px dashed #444; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -41,9 +45,24 @@
     <input id="symbol" placeholder="Symbol (e.g. SHIN)" maxlength="10">
     <textarea id="desc" placeholder="Token Description..." rows="2" maxlength="200"></textarea>
     
+    <div class="social-group">
+        <label>SOCIAL MEDIA (OPTIONAL):</label>
+        <input id="website" placeholder="Website URL (https://...)">
+        <input id="twitter" placeholder="Twitter/X URL">
+        <input id="telegram" placeholder="Telegram Link">
+    </div>
+
     <label>TOKENOMICS:</label>
-    <input id="supply" type="number" placeholder="Total Supply (e.g. 1000000000)">
-    <input id="decimals" type="number" value="9" min="0" max="9">
+    <div class="grid">
+        <div>
+            <label>TOTAL SUPPLY:</label>
+            <input id="supply" type="number" placeholder="1000000000">
+        </div>
+        <div>
+            <label>DECIMALS:</label>
+            <input id="decimals" type="number" value="9" min="0" max="9">
+        </div>
+    </div>
 
     <button id="btnCreate">LAUNCH TOKEN (0.3 SOL)</button>
     
@@ -51,6 +70,7 @@
 </div>
 
 <script>
+// --- KONFIGURASI ---
 const HELIUS_RPC = "https://mainnet.helius-rpc.com/?api-key=8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1";
 const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
 const OWNER_FEE_DEST = "38d92K9xPyTM94mC5u1kXfE5Ysh66FzNUn6mK3S1C4fP";
@@ -66,14 +86,13 @@ function updateLog(msg) {
     logDiv.scrollTop = logDiv.scrollHeight;
 }
 
+// Preview Logo
 document.getElementById('logoFile').onchange = function() {
     const file = this.files[0];
     if (file) {
         if (file.size > 2 * 1024 * 1024) {
-            alert("File terlalu besar! Maksimal 2MB.");
-            this.value = "";
-            document.getElementById('previewContainer').style.display = 'none';
-            return;
+            alert("File kegedean, Bro! Max 2MB.");
+            this.value = ""; return;
         }
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -84,27 +103,40 @@ document.getElementById('logoFile').onchange = function() {
     }
 };
 
+// Connect Wallet
 document.getElementById('btnConnect').onclick = async () => {
     try {
         const provider = window?.phantom?.solana || window?.solana;
-        if (!provider) return alert("Buka lewat Phantom!");
+        if (!provider) return alert("Buka lewat Browser di dalam Phantom Wallet ya!");
         const resp = await provider.connect();
         userPubKey = resp.publicKey;
-        document.getElementById('btnConnect').innerText = `WALLET: ${userPubKey.toString().slice(0,6)}...`;
+        document.getElementById('btnConnect').innerText = `WALLET: ${userPubKey.toString().slice(0,4)}...${userPubKey.toString().slice(-4)}`;
         updateLog("Wallet connected.");
-    } catch (err) { alert(err.message); }
+    } catch (err) { alert("Gagal connect: " + err.message); }
 };
 
-async function uploadIPFS(file, name, symbol, desc) {
+// Upload ke IPFS (Metadata + Socials)
+async function uploadIPFS(file, name, symbol, desc, web, tw, tg) {
     const formData = new FormData();
     formData.append('file', file);
+    
+    // Upload Gambar
     const imgRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
         method: 'POST', headers: { Authorization: `Bearer ${PINATA_JWT}` }, body: formData
     });
     const imgData = await imgRes.json();
     const imageUrl = `https://gateway.pinata.cloud/ipfs/${imgData.IpfsHash}`;
 
-    const metaJSON = { name, symbol, description: desc || "", image: imageUrl };
+    // Buat JSON Metadata
+    const metaJSON = { 
+        name, 
+        symbol, 
+        description: desc || "", 
+        image: imageUrl,
+        external_url: web || "",
+        extensions: { website: web, twitter: tw, telegram: tg }
+    };
+    
     const jsonRes = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
         method: 'POST', headers: { Authorization: `Bearer ${PINATA_JWT}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(metaJSON)
@@ -113,7 +145,14 @@ async function uploadIPFS(file, name, symbol, desc) {
     return `https://gateway.pinata.cloud/ipfs/${jsonData.IpfsHash}`;
 }
 
+// MAIN LAUNCH FUNCTION
 document.getElementById('btnCreate').onclick = async () => {
+    // 1. CEK LIBRARY (Proteksi HP)
+    if (typeof window.solanaWeb3 === 'undefined') {
+        alert("Sabar, library Solana lagi loading... Tunggu 5 detik.");
+        return;
+    }
+
     if (isLaunching) return;
     
     const spl = window.splToken || window.solanaSplToken;
@@ -121,38 +160,44 @@ document.getElementById('btnCreate').onclick = async () => {
     const symbol = document.getElementById('symbol').value.trim();
     const supplyRaw = document.getElementById('supply').value;
     const logoFile = document.getElementById('logoFile').files[0];
+    
+    const web = document.getElementById('website').value.trim();
+    const tw = document.getElementById('twitter').value.trim();
+    const tg = document.getElementById('telegram').value.trim();
 
-    if (!userPubKey) return alert("Hubungkan wallet dulu!");
-    if (!name || !symbol || !supplyRaw || !logoFile) return alert("Isi semua field!");
+    if (!userPubKey) return alert("Hubungkan Wallet Phantom dulu!");
+    if (!name || !symbol || !supplyRaw || !logoFile) return alert("Wajib isi: Nama, Simbol, Supply, dan Logo!");
 
     isLaunching = true;
     const btn = document.getElementById('btnCreate');
     btn.disabled = true;
-    btn.innerText = "LAUNCHING...";
+    btn.innerText = "SEDANG MEMPROSES...";
 
     try {
         const supplyVal = BigInt(supplyRaw);
         const decimals = parseInt(document.getElementById('decimals').value) || 9;
         const connection = new solanaWeb3.Connection(HELIUS_RPC, "confirmed");
 
-        updateLog("Mengupload metadata ke IPFS...");
-        const metadataUri = await uploadIPFS(logoFile, name, symbol, document.getElementById('desc').value);
+        updateLog("Step 1: Uploading Metadata ke IPFS...");
+        const metadataUri = await uploadIPFS(logoFile, name, symbol, document.getElementById('desc').value, web, tw, tg);
 
-        updateLog("Menyusun transaksi...");
+        updateLog("Step 2: Menyiapkan Transaksi Blockchain...");
         const mintKey = solanaWeb3.Keypair.generate();
         const transaction = new solanaWeb3.Transaction();
         const { blockhash } = await connection.getLatestBlockhash();
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = userPubKey;
 
-        // 1. Fee Transfer + Create Account + Init Mint
+        // --- INTRUKSI TRANSAKSI ---
         transaction.add(
+            // Fee 0.3 SOL
             solanaWeb3.SystemProgram.transfer({ fromPubkey: userPubKey, toPubkey: new solanaWeb3.PublicKey(OWNER_FEE_DEST), lamports: 0.3 * solanaWeb3.LAMPORTS_PER_SOL }),
+            // Bikin Akun Mint
             solanaWeb3.SystemProgram.createAccount({ fromPubkey: userPubKey, newAccountPubkey: mintKey.publicKey, space: 82, lamports: await connection.getMinimumBalanceForRentExemption(82), programId: spl.TOKEN_PROGRAM_ID }),
             spl.createInitializeMintInstruction(mintKey.publicKey, decimals, userPubKey, userPubKey)
         );
 
-        // 2. Create Metadata Account
+        // Metadata Account
         const [metadataPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
             [Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mintKey.publicKey.toBuffer()], METADATA_PROGRAM_ID
         );
@@ -164,34 +209,35 @@ document.getElementById('btnCreate').onclick = async () => {
             )
         );
 
-        // 3. Mint Tokens + Revoke Mint Authority + Revoke Freeze Authority
+        // Mint Supply & Revoke Authority (Biar Rug-Proof)
         const ata = await spl.getAssociatedTokenAddress(mintKey.publicKey, userPubKey);
         transaction.add(
             spl.createAssociatedTokenAccountInstruction(userPubKey, ata, userPubKey, mintKey.publicKey),
             spl.createMintToInstruction(mintKey.publicKey, ata, userPubKey, supplyVal * (BigInt(10) ** BigInt(decimals))),
-            // --- FIX: REVOKE KEDUANYA ---
             spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.MintTokens, null),
             spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.FreezeAccount, null)
         );
 
-        updateLog("Menunggu tanda tangan wallet...");
+        updateLog("Step 3: Silakan ACC di Wallet Phantom lo...");
         transaction.partialSign(mintKey);
-        const signed = await (window?.phantom?.solana || window?.solana).signTransaction(transaction);
+        
+        const provider = window?.phantom?.solana || window?.solana;
+        const signed = await provider.signTransaction(transaction);
         const signature = await connection.sendRawTransaction(signed.serialize());
         
-        updateLog("Konfirmasi di Blockchain...");
+        updateLog("Step 4: Menunggu Konfirmasi Jaringan...");
         await connection.confirmTransaction(signature);
         
         const ca = mintKey.publicKey.toBase58();
-        updateLog(`<span style='color:#14f195'><b>SUCCESS!</b> CA: ${ca}</span>`);
+        updateLog(`<span style='color:#14f195'><b>BERHASIL!</b></span>`);
+        updateLog(`CA: ${ca}`);
         
-        // --- FIX: OPEN EXPLORER ---
-        alert(`Token Berhasil Dibuat!\nCA: ${ca}`);
+        alert(`GOKIL! Token Berhasil Dibuat.\nCA: ${ca}`);
         window.open(`https://solscan.io/token/${ca}`, '_blank');
 
     } catch (err) {
-        updateLog(`<span style='color:red'>Error: ${err.message}</span>`);
-        alert(err.message);
+        updateLog(`<span style='color:red'>Gagal: ${err.message}</span>`);
+        alert("Waduh Error: " + err.message);
     } finally {
         isLaunching = false;
         btn.disabled = false;
