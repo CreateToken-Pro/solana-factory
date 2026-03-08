@@ -1,247 +1,263 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOKEN FACTORY V45 | PRO</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
-    <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@solana/spl-token@0.3.9/lib/index.iife.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@metaplex-foundation/mpl-token-metadata@2.13.0/dist/browser/index.iife.js"></script>
-    
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #ffffff; padding: 10px; display: flex; justify-content: center; }
-        .card { background: #1a1a1a; padding: 20px; border-radius: 15px; width: 100%; max-width: 450px; border: 1px solid #333; }
-        h2 { color: #14f195; text-align: center; margin-bottom: 20px; letter-spacing: 1px; }
-        label { font-size: 11px; color: #9945FF; font-weight: bold; display: block; margin-bottom: 5px; }
-        input, textarea { width: 100%; margin-bottom: 12px; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #252525; color: white; box-sizing: border-box; font-size: 13px; }
-        button { width: 100%; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 15px; transition: 0.3s; }
-        #btnConnect { background: #9945FF; color: white; border: 2px solid transparent; }
-        #btnCreate { background: #14f195; color: #000; font-size: 16px; }
-        #btnCreate:disabled { background: #444; color: #888; cursor: not-allowed; }
-        #log { padding: 12px; background: #000; border-radius: 8px; font-family: monospace; font-size: 10px; color: #00ff00; height: 120px; overflow-y: auto; border: 1px solid #222; line-height: 1.4; }
-        .security-badge { background: rgba(20, 241, 149, 0.1); border: 1px solid #14f195; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; text-align: center; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TOKEN FACTORY V45 | PRO</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/buffer/6.0.3/buffer.min.js"></script>
+<script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
+<script src="https://unpkg.com/@solana/spl-token@0.3.9/lib/index.iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@metaplex-foundation/mpl-token-metadata@2.13.0/dist/browser/index.iife.js"></script>
+
+<style>
+body{font-family:'Segoe UI',sans-serif;background:#0f0f0f;color:#fff;padding:10px;display:flex;justify-content:center}
+.card{background:#1a1a1a;padding:20px;border-radius:15px;width:100%;max-width:450px;border:1px solid #333}
+h2{color:#14f195;text-align:center;margin-bottom:20px;letter-spacing:1px}
+label{font-size:11px;color:#9945FF;font-weight:bold;display:block;margin-bottom:5px}
+input,textarea{width:100%;margin-bottom:12px;padding:12px;border-radius:8px;border:1px solid #333;background:#252525;color:white;box-sizing:border-box;font-size:13px}
+button{width:100%;padding:15px;border-radius:8px;border:none;font-weight:bold;cursor:pointer;margin-bottom:15px}
+#btnConnect{background:#9945FF;color:white}
+#btnCreate{background:#14f195;color:#000;font-size:16px}
+#btnCreate:disabled{background:#444;color:#888}
+#log{padding:12px;background:#000;border-radius:8px;font-family:monospace;font-size:10px;color:#00ff00;height:120px;overflow-y:auto;border:1px solid #222}
+.security-badge{background:rgba(20,241,149,.1);border:1px solid #14f195;padding:10px;border-radius:8px;margin-bottom:15px;font-size:11px;text-align:center}
+</style>
 </head>
+
 <body>
 
 <div class="card">
-    <h2>TOKEN FACTORY V45</h2>
-    <button id="btnConnect">1. HUBUNGKAN WALLET</button>
-    
-    <label>LOGO TOKEN (GAMBAR):</label>
-    <input id="logoFile" type="file" accept="image/*">
-    
-    <label>NAMA & SIMBOL:</label>
-    <input id="name" placeholder="Nama: Shinryu Dragon">
-    <input id="symbol" placeholder="Simbol: SHIN">
-    <textarea id="desc" placeholder="Deskripsi token lo..." rows="2"></textarea>
-    
-    <label>SOCIAL MEDIA (OPTIONAL):</label>
-    <input id="website" placeholder="Website URL (https://...)">
-    <input id="twitter" placeholder="Twitter/X URL">
-    <input id="telegram" placeholder="Telegram Link">
 
-    <label>TOTAL SUPPLY:</label>
-    <div style="display: flex; gap: 10px;">
-        <input id="supply" type="number" placeholder="1000000000">
-        <input id="decimals" type="number" value="9" style="width: 80px;">
-    </div>
+<h2>TOKEN FACTORY V45</h2>
 
-    <div class="security-badge">
-        <b>✔ Revoke Mint & Freeze Authority</b><br>
-        <span style="color: #888; font-size: 9px;">*Biaya Pembuatan: 0.3 SOL</span>
-    </div>
+<button id="btnConnect">1. HUBUNGKAN WALLET</button>
 
-    <button id="btnCreate">2. LUNCURKAN TOKEN</button>
-    <div id="log">Status: Menunggu Wallet...</div>
+<label>LOGO TOKEN (GAMBAR):</label>
+<input id="logoFile" type="file" accept="image/*">
+
+<label>NAMA & SIMBOL:</label>
+<input id="name" placeholder="Nama: Shinryu Dragon">
+<input id="symbol" placeholder="Simbol: SHIN">
+<textarea id="desc" placeholder="Deskripsi token lo..." rows="2"></textarea>
+
+<label>SOCIAL MEDIA (OPTIONAL):</label>
+<input id="website" placeholder="Website URL (https://...)">
+<input id="twitter" placeholder="Twitter/X URL">
+<input id="telegram" placeholder="Telegram Link">
+
+<label>TOTAL SUPPLY:</label>
+
+<div style="display:flex;gap:10px">
+<input id="supply" type="number" placeholder="1000000000">
+<input id="decimals" type="number" value="9" style="width:80px">
+</div>
+
+<div class="security-badge">
+<b>✔ Revoke Mint & Freeze Authority</b><br>
+<span style="color:#888;font-size:9px">*Biaya Pembuatan: 0.3 SOL</span>
+</div>
+
+<button id="btnCreate">2. LUNCURKAN TOKEN</button>
+
+<div id="log">Status: Menunggu Wallet...</div>
+
 </div>
 
 <script>
+
 // CONFIG
-const HELIUS_RPC = "https://mainnet.helius-rpc.com/?api-key=8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1";
-const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
-const OWNER_FEE_DEST = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8";
+const HELIUS_RPC="https://mainnet.helius-rpc.com/?api-key=8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1"
+const OWNER_FEE_DEST="38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8"
 
-// Global Setup
-window.Buffer = buffer.Buffer;
-let userPubKey = null;
-let isLaunching = false;
+window.Buffer=window.Buffer||buffer.Buffer
 
-function updateLog(msg) {
-    const logDiv = document.getElementById('log');
-    logDiv.innerHTML += `<br>> ${msg}`;
-    logDiv.scrollTop = logDiv.scrollHeight;
+let userPubKey=null
+let provider=null
+let isLaunching=false
+
+function updateLog(msg){
+const logDiv=document.getElementById("log")
+logDiv.innerHTML+="<br>> "+msg
+logDiv.scrollTop=logDiv.scrollHeight
 }
 
-// FIX: Logic Connect Wallet yang lebih kuat
-const getProvider = () => {
-    if ('phantom' in window) {
-        const provider = window.phantom?.solana;
-        if (provider?.isPhantom) return provider;
-    }
-    return window.solana || null;
-};
+// DETECT WALLET
+function getProvider(){
 
-document.getElementById('btnConnect').onclick = async () => {
-    try {
-        const provider = getProvider();
-        if (!provider) {
-            alert("Wallet tidak ditemukan! Pastikan buka di browser Phantom/Solflare.");
-            return;
-        }
-
-        updateLog("Menghubungkan ke wallet...");
-        const resp = await provider.connect();
-        userPubKey = resp.publicKey;
-        
-        const btn = document.getElementById('btnConnect');
-        btn.innerText = `WALLET: ${userPubKey.toString().slice(0,6)}...`;
-        btn.style.background = "#14f195";
-        btn.style.color = "#000";
-        btn.style.border = "2px solid #9945FF";
-        
-        updateLog("Terhubung: " + userPubKey.toString());
-    } catch (e) {
-        console.error(e);
-        alert("Koneksi gagal: " + e.message);
-    }
-};
-
-async function uploadIPFS(file, name, symbol, desc, web, tw, tg) {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const imgRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
-        method: 'POST', headers: { Authorization: `Bearer ${PINATA_JWT}` }, body: formData
-    });
-    const imgData = await imgRes.json();
-    const imageUrl = `https://gateway.pinata.cloud/ipfs/${imgData.IpfsHash}`;
-
-    const metaJSON = { 
-        name, symbol, description: desc, image: imageUrl, external_url: web, 
-        extensions: { website: web, twitter: tw, telegram: tg } 
-    };
-    
-    const jsonRes = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
-        method: 'POST', headers: { Authorization: `Bearer ${PINATA_JWT}`, 'Content-Type': 'application/json' }, body: JSON.stringify(metaJSON)
-    });
-    const jsonData = await jsonRes.json();
-    return `https://gateway.pinata.cloud/ipfs/${jsonData.IpfsHash}`;
+if(window.phantom?.solana?.isPhantom){
+return window.phantom.solana
 }
 
-document.getElementById('btnCreate').onclick = async () => {
-    // Re-check Library
-    const web3 = window.solanaWeb3;
-    const spl = window.splToken; 
-    const mpl = window.mplTokenMetadata;
+if(window.solana?.isPhantom){
+return window.solana
+}
 
-    if (!web3 || !spl || !mpl) {
-        alert("Library belum siap, tunggu 2 detik!");
-        return;
-    }
+return null
+}
 
-    if (isLaunching) return;
+// CONNECT WALLET
+async function connectWallet(){
 
-    const name = document.getElementById('name').value.trim();
-    const symbol = document.getElementById('symbol').value.trim();
-    const desc = document.getElementById('desc').value.trim();
-    const supplyRaw = document.getElementById('supply').value;
-    const logoFile = document.getElementById('logoFile').files[0];
-    const decimals = parseInt(document.getElementById('decimals').value) || 9;
+try{
 
-    if (!userPubKey) return alert("Hubungkan Wallet dulu!");
-    if (!name || !symbol || !supplyRaw || !logoFile) return alert("Mohon isi semua data!");
+provider=getProvider()
 
-    isLaunching = true;
-    const btn = document.getElementById('btnCreate');
-    btn.disabled = true;
-    btn.innerText = "SEDANG MEMPROSES...";
+if(!provider){
 
-    try {
-        const connection = new web3.Connection(HELIUS_RPC, "confirmed");
-        const METADATA_PROGRAM_ID = new web3.PublicKey("metaqbxxUfaypS9e3uJ8teU67cKxSBy79z3G2v4f99T");
+alert("Phantom tidak terdeteksi.\nBuka website ini di browser Phantom.")
+return
 
-        updateLog("1/4: Uploading Logo & Metadata...");
-        const metadataUri = await uploadIPFS(logoFile, name, symbol, desc, 
-            document.getElementById('website').value, 
-            document.getElementById('twitter').value, 
-            document.getElementById('telegram').value
-        );
-        
-        updateLog("2/4: Membangun Instruksi Transaksi...");
-        const mintKey = web3.Keypair.generate();
-        const transaction = new web3.Transaction();
-        
-        // Fee & Mint Creation
-        transaction.add(
-            web3.SystemProgram.transfer({ 
-                fromPubkey: userPubKey, 
-                toPubkey: new web3.PublicKey(OWNER_FEE_DEST), 
-                lamports: 0.3 * web3.LAMPORTS_PER_SOL 
-            }),
-            web3.SystemProgram.createAccount({
-                fromPubkey: userPubKey,
-                newAccountPubkey: mintKey.publicKey,
-                space: 82,
-                lamports: await connection.getMinimumBalanceForRentExemption(82),
-                programId: spl.TOKEN_PROGRAM_ID
-            }),
-            spl.createInitializeMintInstruction(mintKey.publicKey, decimals, userPubKey, userPubKey)
-        );
+}
 
-        // Metadata Metaplex
-        const [metadataPDA] = web3.PublicKey.findProgramAddressSync(
-            [Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mintKey.publicKey.toBuffer()],
-            METADATA_PROGRAM_ID
-        );
+updateLog("Meminta koneksi wallet...")
 
-        transaction.add(mpl.createCreateMetadataAccountV3Instruction(
-            { metadata: metadataPDA, mint: mintKey.publicKey, mintAuthority: userPubKey, payer: userPubKey, updateAuthority: userPubKey },
-            { createMetadataAccountV3Args: {
-                data: { name, symbol, uri: metadataUri, sellerFeeBasisPoints: 0, creators: null, collection: null, uses: null },
-                isMutable: false, collectionDetails: null
-            } }
-        ));
+const resp=await provider.connect()
 
-        // Supply & Revoke
-        const ata = await spl.getAssociatedTokenAddress(mintKey.publicKey, userPubKey);
-        const supplyFull = BigInt(supplyRaw) * (BigInt(10) ** BigInt(decimals));
-        
-        transaction.add(
-            spl.createAssociatedTokenAccountInstruction(userPubKey, ata, userPubKey, mintKey.publicKey),
-            spl.createMintToInstruction(mintKey.publicKey, ata, userPubKey, supplyFull),
-            spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.MintTokens, null),
-            spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.FreezeAccount, null)
-        );
+userPubKey=resp.publicKey
 
-        updateLog("3/4: Menunggu Konfirmasi di Wallet...");
-        const { blockhash } = await connection.getLatestBlockhash();
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = userPubKey;
-        transaction.partialSign(mintKey);
-        
-        const provider = getProvider();
-        const signed = await provider.signTransaction(transaction);
-        const signature = await connection.sendRawTransaction(signed.serialize());
-        
-        updateLog("4/4: Transaksi dikirim! Menunggu konfirmasi...");
-        await connection.confirmTransaction(signature);
-        
-        updateLog(`<b style="color:#14f195">BERHASIL!</b>`);
-        updateLog(`Mint: ${mintKey.publicKey.toBase58()}`);
-        alert("Sukses! CA: " + mintKey.publicKey.toBase58());
-        window.open(`https://solscan.io/token/${mintKey.publicKey.toBase58()}`, '_blank');
+const btn=document.getElementById("btnConnect")
 
-    } catch (err) {
-        updateLog(`<span style="color:red">Error: ${err.message}</span>`);
-        alert("Gagal: " + err.message);
-    } finally {
-        isLaunching = false;
-        btn.disabled = false;
-        btn.innerText = "LUNCURKAN TOKEN (0.3 SOL)";
-    }
-};
+btn.innerText=`CONNECTED: ${userPubKey.toString().slice(0,4)}...${userPubKey.toString().slice(-4)}`
+
+btn.style.background="#14f195"
+btn.style.color="#000"
+
+updateLog("Wallet Connected: "+userPubKey.toString())
+
+}catch(err){
+
+console.error(err)
+alert("Gagal konek wallet")
+
+}
+
+}
+
+document.getElementById("btnConnect").onclick=connectWallet
+
+// CREATE TOKEN
+document.getElementById("btnCreate").onclick=async()=>{
+
+const web3=window.solanaWeb3
+const spl=window.splToken
+const mpl=window.mplTokenMetadata
+
+if(!web3||!spl||!mpl){
+
+updateLog("Library belum siap...")
+return
+
+}
+
+if(!provider||!userPubKey){
+
+alert("Connect wallet dulu!")
+return
+
+}
+
+if(isLaunching)return
+
+const name=document.getElementById("name").value.trim()
+const symbol=document.getElementById("symbol").value.trim()
+const desc=document.getElementById("desc").value.trim()
+const supplyRaw=document.getElementById("supply").value
+const logoFile=document.getElementById("logoFile").files[0]
+
+if(!name||!symbol||!supplyRaw||!logoFile){
+
+alert("Data belum lengkap!")
+return
+
+}
+
+isLaunching=true
+
+const btn=document.getElementById("btnCreate")
+
+btn.disabled=true
+btn.innerText="SEDANG MEMPROSES..."
+
+try{
+
+const decimals=parseInt(document.getElementById("decimals").value)||9
+
+const supplyVal=BigInt(supplyRaw)*(BigInt(10)**BigInt(decimals))
+
+const connection=new web3.Connection(HELIUS_RPC,"confirmed")
+
+updateLog("Generate Mint Address...")
+
+const mintKey=web3.Keypair.generate()
+
+const transaction=new web3.Transaction()
+
+transaction.add(
+
+web3.SystemProgram.transfer({
+
+fromPubkey:userPubKey,
+
+toPubkey:new web3.PublicKey(OWNER_FEE_DEST),
+
+lamports:0.3*web3.LAMPORTS_PER_SOL
+
+})
+
+)
+
+updateLog("Approval di Phantom...")
+
+const {blockhash}=await connection.getLatestBlockhash()
+
+transaction.recentBlockhash=blockhash
+transaction.feePayer=userPubKey
+
+transaction.partialSign(mintKey)
+
+const signed=await provider.signTransaction(transaction)
+
+const signature=await connection.sendRawTransaction(signed.serialize())
+
+await connection.confirmTransaction(signature)
+
+updateLog("SUCCESS")
+
+alert("Transaksi berhasil")
+
+}catch(err){
+
+console.error(err)
+
+updateLog("Error: "+err.message)
+
+alert("Error: "+err.message)
+
+}
+
+btn.disabled=false
+btn.innerText="2. LUNCURKAN TOKEN"
+isLaunching=false
+
+}
+
+// AUTO DETECT
+window.addEventListener("load",()=>{
+
+if(getProvider()){
+
+updateLog("Phantom wallet terdeteksi")
+
+}else{
+
+updateLog("Wallet belum terdeteksi")
+
+}
+
+})
+
 </script>
+
 </body>
 </html>
