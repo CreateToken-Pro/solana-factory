@@ -16,9 +16,9 @@
         label { font-size: 11px; color: #9945FF; font-weight: bold; display: block; margin-bottom: 5px; }
         input, textarea { width: 100%; margin-bottom: 12px; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #252525; color: white; box-sizing: border-box; font-size: 13px; }
         button { width: 100%; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 15px; transition: 0.3s; }
-        #btnConnect { background: #9945FF; color: white; }
+        #btnConnect { background: #9945FF; color: white; border: 2px solid transparent; }
         #btnCreate { background: #14f195; color: #000; font-size: 16px; }
-        #btnCreate:disabled { background: #444; color: #888; }
+        #btnCreate:disabled { background: #444; color: #888; cursor: not-allowed; }
         #log { padding: 12px; background: #000; border-radius: 8px; font-family: monospace; font-size: 10px; color: #00ff00; height: 120px; overflow-y: auto; border: 1px solid #222; line-height: 1.4; }
         .security-badge { background: rgba(20, 241, 149, 0.1); border: 1px solid #14f195; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; text-align: center; }
     </style>
@@ -58,13 +58,13 @@
 </div>
 
 <script>
-// API CONFIG
+// CONFIG
 const HELIUS_RPC = "https://mainnet.helius-rpc.com/?api-key=8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1";
 const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
 const OWNER_FEE_DEST = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8";
 
-// Global Init
-window.Buffer = window.Buffer || buffer.Buffer;
+// Global Setup
+window.Buffer = buffer.Buffer;
 let userPubKey = null;
 let isLaunching = false;
 
@@ -74,34 +74,40 @@ function updateLog(msg) {
     logDiv.scrollTop = logDiv.scrollHeight;
 }
 
-// FIX: Wallet Connection yang lebih pakem
-async function connectWallet() {
-    try {
-        const isPhantom = window.phantom?.solana?.isPhantom;
-        const provider = isPhantom ? window.phantom.solana : window.solana;
+// FIX: Logic Connect Wallet yang lebih kuat
+const getProvider = () => {
+    if ('phantom' in window) {
+        const provider = window.phantom?.solana;
+        if (provider?.isPhantom) return provider;
+    }
+    return window.solana || null;
+};
 
+document.getElementById('btnConnect').onclick = async () => {
+    try {
+        const provider = getProvider();
         if (!provider) {
-            alert("Phantom tidak terdeteksi! Gunakan browser di dalam aplikasi Phantom.");
+            alert("Wallet tidak ditemukan! Pastikan buka di browser Phantom/Solflare.");
             return;
         }
 
+        updateLog("Menghubungkan ke wallet...");
         const resp = await provider.connect();
         userPubKey = resp.publicKey;
         
         const btn = document.getElementById('btnConnect');
-        btn.innerText = `CONNECTED: ${userPubKey.toString().slice(0,4)}...${userPubKey.toString().slice(-4)}`;
+        btn.innerText = `WALLET: ${userPubKey.toString().slice(0,6)}...`;
         btn.style.background = "#14f195";
         btn.style.color = "#000";
-        updateLog("Wallet Connected: " + userPubKey.toString());
-    } catch (err) {
-        console.error(err);
-        alert("Gagal konek: " + err.message);
+        btn.style.border = "2px solid #9945FF";
+        
+        updateLog("Terhubung: " + userPubKey.toString());
+    } catch (e) {
+        console.error(e);
+        alert("Koneksi gagal: " + e.message);
     }
-}
+};
 
-document.getElementById('btnConnect').onclick = connectWallet;
-
-// IPFS Upload Function
 async function uploadIPFS(file, name, symbol, desc, web, tw, tg) {
     const formData = new FormData();
     formData.append('file', file);
@@ -124,30 +130,28 @@ async function uploadIPFS(file, name, symbol, desc, web, tw, tg) {
     return `https://gateway.pinata.cloud/ipfs/${jsonData.IpfsHash}`;
 }
 
-// Main Create Function
 document.getElementById('btnCreate').onclick = async () => {
-    // FIX: Deteksi Library dengan Namespace yang Benar
+    // Re-check Library
     const web3 = window.solanaWeb3;
     const spl = window.splToken; 
     const mpl = window.mplTokenMetadata;
 
     if (!web3 || !spl || !mpl) {
-        updateLog("Menunggu library internal...");
-        setTimeout(() => document.getElementById('btnCreate').click(), 1000); // Auto-retry
+        alert("Library belum siap, tunggu 2 detik!");
         return;
     }
 
     if (isLaunching) return;
 
-    // Ambil Input
     const name = document.getElementById('name').value.trim();
     const symbol = document.getElementById('symbol').value.trim();
     const desc = document.getElementById('desc').value.trim();
     const supplyRaw = document.getElementById('supply').value;
     const logoFile = document.getElementById('logoFile').files[0];
-    
-    if (!userPubKey) return alert("Konek Wallet dulu Bro!");
-    if (!name || !symbol || !supplyRaw || !logoFile) return alert("Data belum lengkap!");
+    const decimals = parseInt(document.getElementById('decimals').value) || 9;
+
+    if (!userPubKey) return alert("Hubungkan Wallet dulu!");
+    if (!name || !symbol || !supplyRaw || !logoFile) return alert("Mohon isi semua data!");
 
     isLaunching = true;
     const btn = document.getElementById('btnCreate');
@@ -155,25 +159,27 @@ document.getElementById('btnCreate').onclick = async () => {
     btn.innerText = "SEDANG MEMPROSES...";
 
     try {
-        const decimals = parseInt(document.getElementById('decimals').value) || 9;
-        const supplyVal = BigInt(supplyRaw) * (BigInt(10) ** BigInt(decimals));
         const connection = new web3.Connection(HELIUS_RPC, "confirmed");
         const METADATA_PROGRAM_ID = new web3.PublicKey("metaqbxxUfaypS9e3uJ8teU67cKxSBy79z3G2v4f99T");
 
-        updateLog("Step 1: Upload Metadata ke IPFS...");
+        updateLog("1/4: Uploading Logo & Metadata...");
         const metadataUri = await uploadIPFS(logoFile, name, symbol, desc, 
             document.getElementById('website').value, 
             document.getElementById('twitter').value, 
             document.getElementById('telegram').value
         );
         
-        updateLog("Step 2: Generate Mint Address...");
+        updateLog("2/4: Membangun Instruksi Transaksi...");
         const mintKey = web3.Keypair.generate();
         const transaction = new web3.Transaction();
         
-        // A. Fee & Mint Account
+        // Fee & Mint Creation
         transaction.add(
-            web3.SystemProgram.transfer({ fromPubkey: userPubKey, toPubkey: new web3.PublicKey(OWNER_FEE_DEST), lamports: 0.3 * web3.LAMPORTS_PER_SOL }),
+            web3.SystemProgram.transfer({ 
+                fromPubkey: userPubKey, 
+                toPubkey: new web3.PublicKey(OWNER_FEE_DEST), 
+                lamports: 0.3 * web3.LAMPORTS_PER_SOL 
+            }),
             web3.SystemProgram.createAccount({
                 fromPubkey: userPubKey,
                 newAccountPubkey: mintKey.publicKey,
@@ -184,7 +190,7 @@ document.getElementById('btnCreate').onclick = async () => {
             spl.createInitializeMintInstruction(mintKey.publicKey, decimals, userPubKey, userPubKey)
         );
 
-        // B. Metadata PDA
+        // Metadata Metaplex
         const [metadataPDA] = web3.PublicKey.findProgramAddressSync(
             [Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mintKey.publicKey.toBuffer()],
             METADATA_PROGRAM_ID
@@ -198,31 +204,33 @@ document.getElementById('btnCreate').onclick = async () => {
             } }
         ));
 
-        // C. Token Supply & Revoke
+        // Supply & Revoke
         const ata = await spl.getAssociatedTokenAddress(mintKey.publicKey, userPubKey);
+        const supplyFull = BigInt(supplyRaw) * (BigInt(10) ** BigInt(decimals));
+        
         transaction.add(
             spl.createAssociatedTokenAccountInstruction(userPubKey, ata, userPubKey, mintKey.publicKey),
-            spl.createMintToInstruction(mintKey.publicKey, ata, userPubKey, supplyVal),
+            spl.createMintToInstruction(mintKey.publicKey, ata, userPubKey, supplyFull),
             spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.MintTokens, null),
             spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.FreezeAccount, null)
         );
 
-        updateLog("Step 3: Approval di Phantom lo...");
+        updateLog("3/4: Menunggu Konfirmasi di Wallet...");
         const { blockhash } = await connection.getLatestBlockhash();
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = userPubKey;
         transaction.partialSign(mintKey);
         
-        const provider = window.phantom?.solana || window.solana;
+        const provider = getProvider();
         const signed = await provider.signTransaction(transaction);
         const signature = await connection.sendRawTransaction(signed.serialize());
         
-        updateLog("Step 4: Menunggu Konfirmasi...");
+        updateLog("4/4: Transaksi dikirim! Menunggu konfirmasi...");
         await connection.confirmTransaction(signature);
         
         updateLog(`<b style="color:#14f195">BERHASIL!</b>`);
-        updateLog(`CA: ${mintKey.publicKey.toBase58()}`);
-        alert("Token Berhasil Dibuat!\nCA: " + mintKey.publicKey.toBase58());
+        updateLog(`Mint: ${mintKey.publicKey.toBase58()}`);
+        alert("Sukses! CA: " + mintKey.publicKey.toBase58());
         window.open(`https://solscan.io/token/${mintKey.publicKey.toBase58()}`, '_blank');
 
     } catch (err) {
