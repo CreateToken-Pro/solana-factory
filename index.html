@@ -26,7 +26,6 @@
         #logoPreview { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #14f195; object-fit: cover; }
         .social-group { border: 1px dashed #444; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
 
-        /* --- STYLING BARU UNTUK PEMBERITAHUAN --- */
         .security-badge {
             background: rgba(20, 241, 149, 0.1);
             border: 1px solid #14f195;
@@ -97,7 +96,10 @@
 // --- KONFIGURASI ---
 const HELIUS_RPC = "https://mainnet.helius-rpc.com/?api-key=8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1";
 const PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE";
-const OWNER_FEE_DEST = "38d92K9xPyTM94mC5u1kXfE5Ysh66FzNUn6mK3S1C4fP";
+
+// ALAMAT WALLET BARU LO DISINI
+const OWNER_FEE_DEST = "38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8";
+
 const METADATA_PROGRAM_ID = new solanaWeb3.PublicKey("metaqbxxUfaypS9e3uJ8teU67cKxSBy79z3G2v4f99T");
 
 window.Buffer = window.Buffer || buffer.Buffer;
@@ -110,7 +112,6 @@ function updateLog(msg) {
     logDiv.scrollTop = logDiv.scrollHeight;
 }
 
-// Preview Logo
 document.getElementById('logoFile').onchange = function() {
     const file = this.files[0];
     if (file) {
@@ -127,7 +128,6 @@ document.getElementById('logoFile').onchange = function() {
     }
 };
 
-// Connect Wallet
 document.getElementById('btnConnect').onclick = async () => {
     try {
         const provider = window?.phantom?.solana || window?.solana;
@@ -139,24 +139,17 @@ document.getElementById('btnConnect').onclick = async () => {
     } catch (err) { alert("Gagal connect: " + err.message); }
 };
 
-// Upload ke IPFS (Metadata + Socials)
 async function uploadIPFS(file, name, symbol, desc, web, tw, tg) {
     const formData = new FormData();
     formData.append('file', file);
-    
-    // Upload Gambar
     const imgRes = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
         method: 'POST', headers: { Authorization: `Bearer ${PINATA_JWT}` }, body: formData
     });
     const imgData = await imgRes.json();
     const imageUrl = `https://gateway.pinata.cloud/ipfs/${imgData.IpfsHash}`;
 
-    // Buat JSON Metadata
     const metaJSON = { 
-        name, 
-        symbol, 
-        description: desc || "", 
-        image: imageUrl,
+        name, symbol, description: desc || "", image: imageUrl,
         external_url: web || "",
         extensions: { website: web, twitter: tw, telegram: tg }
     };
@@ -169,13 +162,11 @@ async function uploadIPFS(file, name, symbol, desc, web, tw, tg) {
     return `https://gateway.pinata.cloud/ipfs/${jsonData.IpfsHash}`;
 }
 
-// MAIN LAUNCH FUNCTION
 document.getElementById('btnCreate').onclick = async () => {
     if (typeof window.solanaWeb3 === 'undefined') {
-        alert("Sabar, library Solana lagi loading... Tunggu 5 detik.");
+        alert("Sabar, library Solana lagi loading...");
         return;
     }
-
     if (isLaunching) return;
     
     const spl = window.splToken || window.solanaSplToken;
@@ -183,7 +174,6 @@ document.getElementById('btnCreate').onclick = async () => {
     const symbol = document.getElementById('symbol').value.trim();
     const supplyRaw = document.getElementById('supply').value;
     const logoFile = document.getElementById('logoFile').files[0];
-    
     const web = document.getElementById('website').value.trim();
     const tw = document.getElementById('twitter').value.trim();
     const tg = document.getElementById('telegram').value.trim();
@@ -232,7 +222,6 @@ document.getElementById('btnCreate').onclick = async () => {
         transaction.add(
             spl.createAssociatedTokenAccountInstruction(userPubKey, ata, userPubKey, mintKey.publicKey),
             spl.createMintToInstruction(mintKey.publicKey, ata, userPubKey, supplyVal * (BigInt(10) ** BigInt(decimals))),
-            // OTOMATIS REVOKE DISINI
             spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.MintTokens, null),
             spl.createSetAuthorityInstruction(mintKey.publicKey, userPubKey, spl.AuthorityType.FreezeAccount, null)
         );
@@ -256,7 +245,7 @@ document.getElementById('btnCreate').onclick = async () => {
 
     } catch (err) {
         updateLog(`<span style='color:red'>Gagal: ${err.message}</span>`);
-        alert("Waduh Error: " + err.message);
+        alert("Error: " + err.message);
     } finally {
         isLaunching = false;
         btn.disabled = false;
