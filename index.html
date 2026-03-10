@@ -3,454 +3,677 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dardcor AI - Pembuat Token SPL Solana</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Dardcor AI | SPL Token Creator Pro</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome CDN (untuk ikon) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0pReXgC5Kj2YSPtX7W3T+x12yYw+2/fP2L5/A0L7M/x2e3A7qC0G0u/A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- Solana Web3.js -->
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-    <!-- Solana SPL Token -->
-    <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.js"></script>
-    <!-- Buffer (diperlukan oleh beberapa library Solana di browser) -->
-    <script>
-        // Polyfill Buffer untuk browser
-        (function (global) {
-            if (typeof Buffer === 'undefined') {
-                global.Buffer = require('buffer').Buffer;
-            }
-        })(typeof self !== 'undefined' ? self : this);
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/buffer@6.0.3/index.min.js"></script>
-
+    <script src="https://unpkg.com/@solana/web3.js@1.87.0/lib/index.iife.min.js"></script>
+    
+    <!-- Custom Styles -->
     <style>
-        body {
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
             font-family: 'Inter', sans-serif;
-            background-color: #1a1a2e; /* Dark background */
-            color: #e0e0e0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
             min-height: 100vh;
-            padding: 20px;
         }
-        .container {
-            background-color: #16213e; /* Slightly lighter dark */
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-            padding: 40px;
-            max-width: 700px;
-            width: 100%;
-            border: 1px solid #0f3460;
+        
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
-        input[type="text"], input[type="number"], textarea, input[type="file"] {
-            background-color: #0f3460;
-            border: 1px solid #1a1a2e;
-            color: #e0e0e0;
-            padding: 12px;
-            border-radius: 8px;
-            width: 100%;
-            transition: border-color 0.3s;
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
-        input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
-            border-color: #e94560;
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.5);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .input-dark {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(71, 85, 105, 0.8);
+            transition: all 0.2s;
+        }
+        
+        .input-dark:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
             outline: none;
         }
-        button {
-            background-color: #e94560;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            transition: background-color 0.3s ease;
-            cursor: pointer;
-            font-weight: bold;
+        
+        .logo-preview {
+            max-width: 150px;
+            max-height: 150px;
+            object-fit: contain;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
         }
-        button:hover:not(:disabled) {
-            background-color: #b82b42;
-        }
-        button:disabled {
-            background-color: #6c2331;
-            cursor: not-allowed;
-        }
-        .checkbox-container {
-            display: flex;
+        
+        .social-tag {
+            display: inline-flex;
             align-items: center;
-            margin-bottom: 10px;
+            gap: 6px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 6px 12px;
+            border-radius: 20px;
+            margin: 4px;
+            font-size: 0.875rem;
         }
-        .checkbox-container input[type="checkbox"] {
-            margin-right: 10px;
-            width: auto;
-            accent-color: #e94560;
+        
+        .loader {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
         }
-        .social-input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-        .social-input-group button {
-            width: 40px;
-            height: 40px;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        
+        .check-icon {
+            color: #10b981;
+            animation: popIn 0.3s ease;
         }
-        .tooltip {
-            position: relative;
-            display: inline-block;
-        }
-        .tooltip .tooltiptext {
-            visibility: hidden;
-            width: 200px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 5px 0;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%; /* Position above the tooltip container */
-            left: 50%;
-            margin-left: -100px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .tooltip .tooltiptext::after {
-            content: "";
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: #333 transparent transparent transparent;
-        }
-        .tooltip:hover .tooltiptext {
-            visibility: visible;
-            opacity: 1;
+        
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            80% { transform: scale(1.2); }
+            100% { transform: scale(1); }
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1 class="text-4xl font-bold text-center mb-8 text-white">Buat Token SPL Solana</h1>
-
-        <div class="mb-6 text-center">
-            <button id="connectWalletBtn" class="bg-blue-600 hover:bg-blue-700">
-                <i class="fas fa-wallet mr-2"></i> Hubungkan Wallet
-            </button>
-            <p id="walletAddress" class="mt-4 text-lg text-green-400"></p>
-        </div>
-
-        <form id="tokenForm" class="space-y-6">
-            <div>
-                <label for="logo" class="block text-sm font-medium mb-2">Logo Token (PNG, JPG, maks 1MB):</label>
-                <input type="file" id="logo" accept="image/png, image/jpeg" class="block w-full text-sm text-gray-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-full file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-pink-50 file:text-pink-700
-                    hover:file:bg-pink-100" />
-                <p id="logoPreview" class="mt-2 text-sm text-gray-400"></p>
-            </div>
-
-            <div>
-                <label for="name" class="block text-sm font-medium mb-2">Nama Token:</label>
-                <input type="text" id="name" placeholder="Contoh: Dardcor Coin" required />
-            </div>
-
-            <div>
-                <label for="symbol" class="block text-sm font-medium mb-2">Ticker Token (Symbol):</label>
-                <input type="text" id="symbol" placeholder="Contoh: DDC" required maxlength="10" />
-            </div>
-
-            <div>
-                <label for="description" class="block text-sm font-medium mb-2">Deskripsi Token:</label>
-                <textarea id="description" rows="3" placeholder="Deskripsi singkat tentang token Anda..." required></textarea>
-            </div>
-
-            <div>
-                <label for="decimals" class="block text-sm font-medium mb-2">Desimal Token (umumnya 9):</label>
-                <input type="number" id="decimals" value="9" min="0" max="9" required />
-            </div>
-
-            <div>
-                <label for="initialSupply" class="block text-sm font-medium mb-2">Pasokan Awal (akan dicetak ke wallet Anda):</label>
-                <input type="number" id="initialSupply" value="0" min="0" step="any" required />
-            </div>
-
-            <div id="socialsContainer">
-                <label class="block text-sm font-medium mb-2">Media Sosial (Opsional):</label>
-                <div class="social-input-group">
-                    <input type="text" class="social-link-input" placeholder="Link Twitter" data-name="twitter" />
-                    <button type="button" class="bg-red-500 hover:bg-red-600 remove-social-btn"><i class="fas fa-times"></i></button>
+<body class="text-gray-100">
+    <div class="min-h-screen py-8 px-4">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-10">
+                <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4 shadow-lg">
+                    <i class="fas fa-coins text-3xl text-white"></i>
                 </div>
-                <button type="button" id="addSocialBtn" class="bg-green-600 hover:bg-green-700 mt-2">
-                    <i class="fas fa-plus mr-2"></i> Tambah Link Sosial
-                </button>
+                <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
+                    Dardcor AI Token Creator
+                </h1>
+                <p class="text-gray-400">Buat Token SPL Solana dengan metadata lengkap dalam 1 klik</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                <div class="checkbox-container">
-                    <input type="checkbox" id="mintAuthority" checked />
-                    <label for="mintAuthority" class="text-sm">Pertahankan Otoritas Mint
-                        <span class="tooltip">
-                            <i class="fas fa-info-circle text-gray-400 ml-1"></i>
-                            <span class="tooltiptext">Jika dicentang, Anda dapat mencetak token baru. Jika tidak, kemampuan mint akan dicabut selamanya.</span>
-                        </span>
-                    </label>
+            <!-- Main Card -->
+            <div class="glass-card rounded-2xl p-6 md:p-8">
+                <!-- Wallet Connection -->
+                <div class="mb-8">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-4 p-4 bg-slate-800/50 rounded-xl">
+                        <div>
+                            <p class="text-sm text-gray-400 mb-1">Wallet Status</p>
+                            <p id="walletStatus" class="text-lg font-medium">
+                                <i class="fas fa-circle-notch fa-spin mr-2"></i> Menghubungkan...
+                            </p>
+                        </div>
+                        <button 
+                            id="connectBtn" 
+                            class="btn-primary px-6 py-3 rounded-xl font-semibold flex items-center gap-2"
+                        >
+                            <i class="fas fa-wallet"></i>
+                            <span>Hubungkan Phantom</span>
+                        </button>
+                    </div>
+                    <p id="walletAddress" class="mt-3 text-center text-sm text-gray-400 hidden"></p>
                 </div>
 
-                <div class="checkbox-container">
-                    <input type="checkbox" id="freezeAuthority" checked />
-                    <label for="freezeAuthority" class="text-sm">Pertahankan Otoritas Freeze
-                        <span class="tooltip">
-                            <i class="fas fa-info-circle text-gray-400 ml-1"></i>
-                            <span class="tooltiptext">Jika dicentang, Anda dapat membekukan token di akun tertentu. Jika tidak, kemampuan freeze akan dicabut selamanya.</span>
-                        </span>
-                    </label>
+                <!-- Form -->
+                <form id="tokenForm" class="space-y-6">
+                    <!-- Logo Upload -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-300">
+                            <i class="fas fa-image mr-2"></i>Logo Token (PNG/JPG, Max 1MB)
+                        </label>
+                        <div class="flex flex-col md:flex-row gap-6">
+                            <div class="flex-1">
+                                <input 
+                                    type="file" 
+                                    id="logoInput" 
+                                    accept="image/png,image/jpeg,image/jpg"
+                                    class="input-dark w-full file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                                    required
+                                >
+                                <p class="mt-2 text-xs text-gray-500">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Gambar akan diupload ke IPFS via Pinata
+                                </p>
+                            </div>
+                            <div class="flex items-center justify-center">
+                                <div id="logoPreview" class="w-32 h-32 flex items-center justify-center">
+                                    <div class="text-gray-500 text-center">
+                                        <i class="fas fa-cloud-upload-alt text-3xl mb-2"></i>
+                                        <p class="text-xs">Preview</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Token Details -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-tag mr-2"></i>Nama Token
+                            </label>
+                            <input 
+                                type="text" 
+                                id="tokenName" 
+                                placeholder="Contoh: Dardcor AI Coin"
+                                class="input-dark"
+                                required
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-font mr-2"></i>Ticker (Symbol)
+                            </label>
+                            <input 
+                                type="text" 
+                                id="tokenSymbol" 
+                                placeholder="Contoh: DAI"
+                                maxlength="10"
+                                class="input-dark uppercase"
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">
+                            <i class="fas fa-align-left mr-2"></i>Deskripsi Token
+                        </label>
+                        <textarea 
+                            id="tokenDesc" 
+                            rows="3" 
+                            placeholder="Jelaskan tujuan dan fitur token Anda..."
+                            class="input-dark"
+                            required
+                        ></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-sliders-h mr-2"></i>Desimal
+                            </label>
+                            <input 
+                                type="number" 
+                                id="decimals" 
+                                value="9" 
+                                min="0" 
+                                max="9" 
+                                class="input-dark"
+                                required
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-coins mr-2"></i>Pasokan Awal
+                            </label>
+                            <input 
+                                type="number" 
+                                id="initialSupply" 
+                                value="1000000" 
+                                min="0" 
+                                step="any"
+                                class="input-dark"
+                                required
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-money-bill-wave mr-2"></i>Biaya Layanan
+                            </label>
+                            <div class="input-dark bg-slate-800 px-4 py-3 rounded-lg flex items-center">
+                                <span class="text-yellow-400 font-bold">0.20 SOL</span>
+                                <i class="fas fa-info-circle ml-2 text-gray-400 cursor-help" title="Dibayarkan ke wallet layanan"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Social Links -->
+                    <div class="space-y-3">
+                        <label class="block text-sm font-medium text-gray-300">
+                            <i class="fas fa-share-alt mr-2"></i>Media Sosial (Opsional)
+                        </label>
+                        <div id="socialsContainer" class="space-y-2">
+                            <!-- Social inputs will be added here -->
+                        </div>
+                        <button 
+                            type="button" 
+                            id="addSocialBtn"
+                            class="text-sm bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg transition"
+                        >
+                            <i class="fas fa-plus mr-2"></i>Tambah Link Sosial
+                        </button>
+                    </div>
+
+                    <!-- Authority Options -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-800/50 rounded-xl">
+                        <div class="flex items-start space-x-3">
+                            <input 
+                                type="checkbox" 
+                                id="mintAuthority" 
+                                checked
+                                class="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                            >
+                            <div>
+                                <label for="mintAuthority" class="font-medium text-gray-200">Pertahankan Otoritas Mint</label>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    Anda dapat mencetak token lebih lanjut. Nonaktifkan untuk "locked supply".
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <input 
+                                type="checkbox" 
+                                id="freezeAuthority" 
+                                checked
+                                class="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                            >
+                            <div>
+                                <label for="freezeAuthority" class="font-medium text-gray-200">Pertahankan Otoritas Freeze</label>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    Anda dapat membekukan token di akun tertentu. Nonaktifkan untuk "unfreezable".
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button 
+                        type="submit" 
+                        id="submitBtn"
+                        class="btn-primary w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3"
+                        disabled
+                    >
+                        <i class="fas fa-magic"></i>
+                        <span>Buat Token & Bayar 0.20 SOL</span>
+                    </button>
+                </form>
+
+                <!-- Result Section -->
+                <div id="resultSection" class="mt-8 p-6 bg-gradient-to-br from-emerald-900/50 to-teal-900/50 border border-emerald-500/30 rounded-xl hidden">
+                    <div class="flex items-center gap-3 mb-4">
+                        <i class="fas fa-check-circle text-3xl text-emerald-400 check-icon"></i>
+                        <h2 class="text-2xl font-bold text-emerald-300">Token Berhasil Dibuat!</h2>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-sm text-gray-400 mb-1">Alamat Kontrak Token (CA)</p>
+                            <div class="flex items-center gap-2">
+                                <code id="tokenCA" class="bg-slate-900 px-4 py-2 rounded-lg text-blue-300 font-mono text-sm break-all flex-1"></code>
+                                <button onclick="copyToClipboard('tokenCA')" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-400 mb-1">Tanda Tangan Transaksi</p>
+                            <div class="flex items-center gap-2">
+                                <code id="txSignature" class="bg-slate-900 px-4 py-2 rounded-lg text-purple-300 font-mono text-sm break-all flex-1"></code>
+                                <button onclick="copyToClipboard('txSignature')" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-400 mb-1">Metadata URI (IPFS)</p>
+                            <a id="metadataUri" href="#" target="_blank" class="text-blue-400 hover:underline break-all flex items-center gap-2">
+                                <i class="fas fa-external-link-alt"></i>
+                                <span id="metadataUriText"></span>
+                            </a>
+                        </div>
+                        
+                        <div class="pt-4 border-t border-slate-700">
+                            <a id="explorerLink" href="#" target="_blank" class="btn-primary px-6 py-3 rounded-lg inline-flex items-center gap-2">
+                                <i class="fas fa-search"></i>
+                                Lihat di Solana Explorer
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Section -->
+                <div id="errorSection" class="mt-8 p-6 bg-red-900/50 border border-red-500/30 rounded-xl hidden">
+                    <div class="flex items-center gap-3 mb-4">
+                        <i class="fas fa-exclamation-triangle text-3xl text-red-400"></i>
+                        <h2 class="text-2xl font-bold text-red-300">Terjadi Kesalahan!</h2>
+                    </div>
+                    <div id="errorMessage" class="text-red-200 bg-red-950/50 p-4 rounded-lg"></div>
+                </div>
+
+                <!-- Loading Overlay -->
+                <div id="loadingOverlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+                    <div class="glass-card p-8 rounded-2xl text-center max-w-md">
+                        <div class="loader mx-auto mb-4"></div>
+                        <h3 class="text-xl font-bold mb-2">Sedang Memproses</h3>
+                        <p id="loadingText" class="text-gray-300">Menghubungkan ke wallet...</p>
+                    </div>
                 </div>
             </div>
 
-            <p class="text-lg text-center mt-8">Biaya Layanan: <span class="font-bold text-yellow-400">0.20 SOL</span></p>
-
-            <button type="submit" id="createTokenBtn" class="w-full mt-6" disabled>
-                Buat Token & Bayar
-            </button>
-        </form>
-
-        <div id="result" class="mt-8 p-6 bg-gray-800 rounded-lg hidden">
-            <h2 class="text-2xl font-bold mb-4 text-green-400">Token Berhasil Dibuat!</h2>
-            <p class="mb-2">Alamat Kontrak Token (CA): <span id="tokenCa" class="font-mono text-blue-400 break-all"></span></p>
-            <p class="mb-2">Tanda Tangan Transaksi: <span id="transactionSignature" class="font-mono text-blue-400 break-all"></span></p>
-            <p class="mb-2">Link Metadata: <a id="metadataLink" target="_blank" class="text-purple-400 hover:underline break-all"></a></p>
-            <p class="mb-2">Lihat di Solana Explorer: <a id="explorerLink" target="_blank" class="text-purple-400 hover:underline break-all"></a></p>
-        </div>
-
-        <div id="error" class="mt-8 p-6 bg-red-800 rounded-lg hidden">
-            <h2 class="text-2xl font-bold mb-4 text-white">Terjadi Kesalahan!</h2>
-            <p id="errorMessage" class="text-red-200"></p>
+            <!-- Footer -->
+            <div class="mt-8 text-center text-gray-500 text-sm">
+                <p>Powered by <span class="text-blue-400 font-semibold">Dardcor AI</span> | SPL Token Creator v2.0</p>
+                <p class="mt-1">Network: <span id="networkBadge" class="px-2 py-1 bg-blue-900/50 rounded text-xs"></span></p>
+            </div>
         </div>
     </div>
 
     <script>
-        const BACKEND_URL = 'http://localhost:3001'; // Sesuaikan dengan port backend Anda
-        let wallet = null;
-        let provider = null;
+        // Configuration
+        const BACKEND_URL = 'http://localhost:3001';
+        const NETWORK = 'devnet'; // 'mainnet-beta' untuk mainnet
+        
+        // State
         let walletPublicKey = null;
-
-        const connectWalletBtn = document.getElementById('connectWalletBtn');
-        const walletAddressElem = document.getElementById('walletAddress');
+        let provider = null;
+        
+        // DOM Elements
+        const connectBtn = document.getElementById('connectBtn');
+        const walletStatus = document.getElementById('walletStatus');
+        const walletAddress = document.getElementById('walletAddress');
         const tokenForm = document.getElementById('tokenForm');
-        const createTokenBtn = document.getElementById('createTokenBtn');
-        const logoInput = document.getElementById('logo');
+        const submitBtn = document.getElementById('submitBtn');
+        const logoInput = document.getElementById('logoInput');
         const logoPreview = document.getElementById('logoPreview');
         const socialsContainer = document.getElementById('socialsContainer');
         const addSocialBtn = document.getElementById('addSocialBtn');
-        const resultDiv = document.getElementById('result');
-        const errorDiv = document.getElementById('error');
-        const errorMessageElem = document.getElementById('errorMessage');
-
-        // Fungsi utilitas untuk menampilkan pesan
-        function showMessage(type, message) {
-            resultDiv.classList.add('hidden');
-            errorDiv.classList.add('hidden');
-            if (type === 'success') {
-                resultDiv.classList.remove('hidden');
-                document.getElementById('tokenCa').textContent = message.tokenCa;
-                document.getElementById('transactionSignature').textContent = message.signature;
-                document.getElementById('metadataLink').textContent = message.metadataLink;
-                document.getElementById('metadataLink').href = message.metadataLink;
-                document.getElementById('explorerLink').href = `https://solscan.io/token/${message.tokenCa}?cluster=devnet`; // Ganti devnet ke mainnet-beta jika sudah siap
-                document.getElementById('explorerLink').textContent = `https://solscan.io/token/${message.tokenCa}?cluster=devnet`;
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+        const resultSection = document.getElementById('resultSection');
+        const errorSection = document.getElementById('errorSection');
+        const errorMessage = document.getElementById('errorMessage');
+        const networkBadge = document.getElementById('networkBadge');
+        
+        // Set network badge
+        networkBadge.textContent = NETWORK === 'mainnet-beta' ? 'MAINNET' : 'DEVNET';
+        networkBadge.className = `px-2 py-1 rounded text-xs ${NETWORK === 'mainnet-beta' ? 'bg-green-900/50 text-green-400' : 'bg-blue-900/50 text-blue-400'}`;
+        
+        // --- INITIALIZE ---
+        function init() {
+            // Add initial social input
+            addSocialInput('twitter', 'https://twitter.com/');
+            addSocialInput('telegram', 'https://t.me/');
+            addSocialInput('website', 'https://');
+            
+            // Check if Phantom is installed
+            if (typeof window.solana !== 'undefined' && window.solana.isPhantom) {
+                walletStatus.innerHTML = '<i class="fas fa-check-circle text-green-400 mr-2"></i> Phantom Wallet Terdeteksi';
             } else {
-                errorDiv.classList.remove('hidden');
-                errorMessageElem.textContent = message;
+                walletStatus.innerHTML = '<i class="fas fa-times-circle text-red-400 mr-2"></i> Phantom Wallet Tidak Terdeteksi';
+                connectBtn.disabled = true;
+                connectBtn.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Install Phantom Wallet';
+                connectBtn.onclick = () => window.open('https://phantom.app/', '_blank');
             }
         }
-
-        // --- Wallet Connection Logic ---
-        async function connectWallet() {
-            if ("solana" in window) {
-                provider = window.solana;
-                if (provider.isPhantom) {
-                    try {
-                        const resp = await provider.connect();
-                        walletPublicKey = new SolanaWeb3.PublicKey(resp.publicKey.toString());
-                        walletAddressElem.textContent = `Terhubung: ${walletPublicKey.toBase58().substring(0, 6)}...${walletPublicKey.toBase58().slice(-6)}`;
-                        createTokenBtn.disabled = false;
-                        connectWalletBtn.textContent = 'Wallet Terhubung';
-                        connectWalletBtn.disabled = true;
-                        console.log("Wallet terhubung:", walletPublicKey.toBase58());
-                    } catch (err) {
-                        console.error("Gagal menghubungkan Phantom Wallet:", err);
-                        showMessage('error', 'Gagal menghubungkan Phantom Wallet. Pastikan aplikasi Phantom terbuka dan Anda mengizinkan koneksi.');
-                    }
+        
+        // --- WALLET CONNECTION ---
+        connectBtn.addEventListener('click', async () => {
+            try {
+                showLoading('Menghubungkan wallet...');
+                
+                if (!window.solana || !window.solana.isPhantom) {
+                    throw new Error('Phantom Wallet tidak ditemukan. Pastikan Phantom terinstal.');
                 }
-            } else {
-                showMessage('error', 'Wallet Phantom tidak ditemukan. Silakan instal Phantom Wallet.');
-                window.open("https://phantom.app/", "_blank");
+                
+                const resp = await window.solana.connect();
+                walletPublicKey = new solanaWeb3.PublicKey(resp.publicKey.toString());
+                
+                walletStatus.innerHTML = `<i class="fas fa-check-circle text-green-400 mr-2"></i>Terhubung: ${walletPublicKey.toBase58().slice(0,6)}...${walletPublicKey.toBase58().slice(-4)}`;
+                walletAddress.textContent = `Alamat: ${walletPublicKey.toBase58()}`;
+                walletAddress.classList.remove('hidden');
+                connectBtn.disabled = true;
+                connectBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Wallet Terhubung';
+                submitBtn.disabled = false;
+                
+            } catch (err) {
+                showError(err.message || 'Gagal menghubungkan wallet');
+            } finally {
+                hideLoading();
             }
-        }
-
-        connectWalletBtn.addEventListener('click', connectWallet);
-
-        // --- Social Media Input Logic ---
-        function addSocialInputField(initialValue = '', name = '') {
+        });
+        
+        // --- SOCIAL INPUTS ---
+        function addSocialInput(platform = '', url = '') {
             const div = document.createElement('div');
-            div.className = 'social-input-group';
+            div.className = 'social-input flex gap-2 mb-2';
             div.innerHTML = `
-                <input type="text" class="social-link-input" placeholder="Link Media Sosial" value="${initialValue}" data-name="${name}" />
-                <button type="button" class="bg-red-500 hover:bg-red-600 remove-social-btn"><i class="fas fa-times"></i></button>
+                <input 
+                    type="text" 
+                    class="social-platform input-dark flex-1 px-3 py-2 rounded text-sm" 
+                    placeholder="Platform (twitter, telegram, website, dll)"
+                    value="${platform}"
+                    required
+                >
+                <input 
+                    type="url" 
+                    class="social-url input-dark flex-2 px-3 py-2 rounded text-sm" 
+                    placeholder="https://..."
+                    value="${url}"
+                    required
+                >
+                <button type="button" class="remove-social-btn bg-red-500/80 hover:bg-red-600 px-3 py-2 rounded text-white">
+                    <i class="fas fa-times"></i>
+                </button>
             `;
-            socialsContainer.insertBefore(div, addSocialBtn);
-
+            socialsContainer.appendChild(div);
+            
             div.querySelector('.remove-social-btn').addEventListener('click', () => {
                 div.remove();
             });
         }
-
-        // Hapus input sosial default jika ada
-        socialsContainer.querySelectorAll('.social-input-group').forEach(group => {
-            group.querySelector('.remove-social-btn').addEventListener('click', () => {
-                group.remove();
-            });
-        });
-
-        addSocialBtn.addEventListener('click', () => addSocialInputField());
-
-        // --- Logo Preview Logic ---
-        logoInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
+        
+        addSocialBtn.addEventListener('click', () => addSocialInput());
+        
+        // --- LOGO PREVIEW ---
+        logoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
             if (file) {
-                if (file.size > 1024 * 1024) { // Max 1MB
-                    logoPreview.innerHTML = '<span class="text-red-400">Ukuran file melebihi 1MB.</span>';
-                    logoInput.value = ''; // Reset input file
+                if (file.size > 1024 * 1024) {
+                    showError('Ukuran file logo melebihi 1MB');
+                    logoInput.value = '';
                     return;
                 }
+                
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    logoPreview.innerHTML = `<img src="${e.target.result}" alt="Logo Preview" class="w-24 h-24 object-contain rounded-lg mt-2" />`;
+                reader.onload = (event) => {
+                    logoPreview.innerHTML = `<img src="${event.target.result}" class="logo-preview" alt="Logo Preview">`;
                 };
                 reader.readAsDataURL(file);
-            } else {
-                logoPreview.innerHTML = '';
             }
         });
-
-        // --- Form Submission Logic ---
-        tokenForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
+        
+        // --- FORM SUBMISSION ---
+        tokenForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
             if (!walletPublicKey) {
-                showMessage('error', 'Silakan hubungkan wallet Anda terlebih dahulu.');
+                showError('Silakan hubungkan wallet terlebih dahulu');
                 return;
             }
-
-            createTokenBtn.disabled = true;
-            createTokenBtn.textContent = 'Memproses...';
-            showMessage('info', 'Sedang membuat token, harap tunggu...');
-
+            
+            const logoFile = logoInput.files[0];
+            if (!logoFile) {
+                showError('Silakan pilih logo token');
+                return;
+            }
+            
             try {
-                const name = document.getElementById('name').value;
-                const symbol = document.getElementById('symbol').value;
-                const description = document.getElementById('description').value;
-                const decimals = parseInt(document.getElementById('decimals').value);
-                const initialSupply = parseFloat(document.getElementById('initialSupply').value);
-                const mintAuthorityEnabled = document.getElementById('mintAuthority').checked;
-                const freezeAuthorityEnabled = document.getElementById('freezeAuthority').checked;
-                const logoFile = logoInput.files[0];
-
-                const socials = {};
-                document.querySelectorAll('.social-link-input').forEach(input => {
-                    const link = input.value.trim();
-                    const name = input.dataset.name || input.placeholder.toLowerCase().replace('link ', '');
-                    if (link) {
-                        socials[name] = link;
-                    }
+                showLoading('Mengunggah logo ke IPFS...');
+                submitBtn.disabled = true;
+                
+                // 1. Upload Logo
+                const logoFormData = new FormData();
+                logoFormData.append('logo', logoFile);
+                
+                const uploadRes = await fetch(`${BACKEND_URL}/api/upload-logo`, {
+                    method: 'POST',
+                    body: logoFormData
                 });
-
-                let logoIpfsUrl = '';
-
-                // 1. Unggah logo ke Pinata
-                if (logoFile) {
-                    const formData = new FormData();
-                    formData.append('logo', logoFile);
-
-                    const uploadRes = await fetch(`${BACKEND_URL}/upload-image`, {
-                        method: 'POST',
-                        body: formData,
-                    });
-
-                    if (!uploadRes.ok) {
-                        const errorData = await uploadRes.json();
-                        throw new Error(`Gagal mengunggah logo: ${errorData.details || uploadRes.statusText}`);
-                    }
-                    const uploadData = await uploadRes.json();
-                    logoIpfsUrl = uploadData.imageUrl;
-                } else {
-                    showMessage('error', 'Logo token wajib diunggah.');
-                    createTokenBtn.disabled = false;
-                    createTokenBtn.textContent = 'Buat Token & Bayar';
-                    return;
+                
+                const uploadData = await uploadRes.json();
+                if (!uploadRes.ok) throw new Error(uploadData.error || 'Gagal upload logo');
+                
+                showLoading('Mempersiapkan transaksi token...');
+                
+                // 2. Prepare token data
+                const tokenData = {
+                    payerPublicKey: walletPublicKey.toBase58(),
+                    name: document.getElementById('tokenName').value.trim(),
+                    symbol: document.getElementById('tokenSymbol').value.trim().toUpperCase(),
+                    description: document.getElementById('tokenDesc').value.trim(),
+                    decimals: parseInt(document.getElementById('decimals').value),
+                    initialSupply: parseFloat(document.getElementById('initialSupply').value),
+                    logoIpfsUrl: uploadData.imageUrl,
+                    mintAuthority: document.getElementById('mintAuthority').checked,
+                    freezeAuthority: document.getElementById('freezeAuthority').checked,
+                    socials: gatherSocials()
+                };
+                
+                // Validate
+                if (!tokenData.name || !tokenData.symbol || !tokenData.description) {
+                    throw new Error('Semua field wajib diisi kecuali media sosial');
                 }
-
-                // 2. Kirim detail token ke backend untuk membuat transaksi
-                const createTxRes = await fetch(`${BACKEND_URL}/create-token-transaction`, {
+                
+                // 3. Create transaction
+                const createRes = await fetch(`${BACKEND_URL}/api/create-token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(tokenData)
+                });
+                
+                const createData = await createRes.json();
+                if (!createRes.ok) throw new Error(createData.error || 'Gagal membuat transaksi');
+                
+                showLoading('Menunggu tanda tangan wallet...');
+                
+                // 4. Deserialize and sign transaction
+                const transaction = solanaWeb3.Transaction.from(
+                    Buffer.from(createData.transaction, 'base64')
+                );
+                
+                const signedTx = await window.solana.signTransaction(transaction);
+                
+                showLoading('Mengirim transaksi ke blockchain...');
+                
+                // 5. Send signed transaction
+                const sendRes = await fetch(`${BACKEND_URL}/api/send-signed-tx`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        payerPublicKey: walletPublicKey.toBase58(),
-                        name,
-                        symbol,
-                        description,
-                        decimals,
-                        logoIpfsUrl,
-                        socials,
-                        mintAuthorityEnabled,
-                        freezeAuthorityEnabled,
-                        initialSupply,
-                    }),
+                        signedTransaction: signedTx.serialize().toString('base64')
+                    })
                 });
-
-                if (!createTxRes.ok) {
-                    const errorData = await createTxRes.json();
-                    throw new Error(`Gagal menyiapkan transaksi: ${errorData.details || createTxRes.statusText}`);
-                }
-                const createTxData = await createTxRes.json();
-                const transaction = SolanaWeb3.Transaction.from(Buffer.from(createTxData.transaction, 'base64'));
-
-                // 3. Minta user menandatangani transaksi
-                const signedTransaction = await provider.signTransaction(transaction);
-
-                // 4. Kirim transaksi yang sudah ditandatangani ke backend untuk broadcast
-                const sendTxRes = await fetch(`${BACKEND_URL}/send-signed-transaction`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        signedTransaction: signedTransaction.serialize().toString('base64'),
-                    }),
+                
+                const sendData = await sendRes.json();
+                if (!sendRes.ok) throw new Error(sendData.error || 'Transaksi gagal');
+                
+                // 6. Show success
+                showResult({
+                    tokenCA: createData.mintAddress,
+                    signature: sendData.signature,
+                    metadataUri: createData.metadataUri,
+                    explorer: sendData.explorer
                 });
-
-                if (!sendTxRes.ok) {
-                    const errorData = await sendTxRes.json();
-                    throw new Error(`Gagal mengirim transaksi: ${errorData.details || sendTxRes.statusText}`);
-                }
-                const sendTxData = await sendTxRes.json();
-
-                showMessage('success', {
-                    tokenCa: createTxData.mintAddress,
-                    signature: sendTxData.signature,
-                    metadataLink: createTxData.metadataUri
-                });
-
-            } catch (error) {
-                console.error('Terjadi kesalahan:', error);
-                showMessage('error', `Terjadi kesalahan saat membuat token: ${error.message}`);
+                
+            } catch (err) {
+                showError(err.message || 'Terjadi kesalahan yang tidak diketahui');
+                console.error('Form submission error:', err);
             } finally {
-                createTokenBtn.disabled = false;
-                createTokenBtn.textContent = 'Buat Token & Bayar';
+                submitBtn.disabled = false;
+                hideLoading();
             }
         });
+        
+        // --- HELPER FUNCTIONS ---
+        function gatherSocials() {
+            const socials = {};
+            document.querySelectorAll('.social-input').forEach(inputGroup => {
+                const platform = inputGroup.querySelector('.social-platform').value.trim().toLowerCase();
+                const url = inputGroup.querySelector('.social-url').value.trim();
+                if (platform && url) {
+                    socials[platform] = url;
+                }
+            });
+            return socials;
+        }
+        
+        function showLoading(text) {
+            loadingText.textContent = text;
+            loadingOverlay.classList.remove('hidden');
+        }
+        
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+        
+        function showResult(data) {
+            resultSection.classList.remove('hidden');
+            errorSection.classList.add('hidden');
+            
+            document.getElementById('tokenCA').textContent = data.tokenCA;
+            document.getElementById('txSignature').textContent = data.signature;
+            document.getElementById('metadataUri').href = data.metadataUri;
+            document.getElementById('metadataUriText').textContent = data.metadataUri;
+            document.getElementById('explorerLink').href = data.explorer;
+            
+            // Scroll to result
+            resultSection.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function showError(message) {
+            errorSection.classList.remove('hidden');
+            resultSection.classList.add('hidden');
+            errorMessage.textContent = message;
+        }
+        
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.currentTarget;
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => btn.innerHTML = originalHTML, 2000);
+            });
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', init);
     </script>
 </body>
 </html>
