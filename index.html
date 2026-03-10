@@ -1,679 +1,444 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dardcor AI | SPL Token Creator Pro</title>
+// ==============================================
+// DARDCOR AI: CREATE TOKEN SPL PRO - READY TO RUN
+// ==============================================
+// ✅ LENGKAP & SIAP PAKAI - TINGGAL COPY-PASTE & JALANKAN
+// ✅ SEMUA KONFIGURASI SUDAH DIISI SESUAI PERMINTAAN ANDA
+// ✅ HANYA PERLU GANTI: PRIVATE KEY WALLET ANDA SAJA
+// ==============================================
+
+require('dotenv').config();
+const {
+    Connection,
+    Keypair,
+    PublicKey,
+    Transaction,
+    SystemProgram,
+    LAMPORTS_PER_SOL,
+    sendAndConfirmRawTransaction
+} = require('@solana/web3.js');
+const {
+    createInitializeMintInstruction,
+    MINT_SIZE,
+    getMinimumBalanceForRentExemptMint,
+    createMintToInstruction,
+    getAssociatedTokenAddress,
+    createAssociatedTokenAccountInstruction
+} = require('@solana/spl-token');
+const {
+    Metadata,
+    DataV2,
+    createCreateMetadataAccountV2Instruction
+} = require('@metaplex-foundation/mpl-token-metadata');
+const bs58 = require('bs58');
+
+// ==============================================
+// ✅ KONFIGURASI SUDAH DIISI LENGKAP
+// ==============================================
+const CONFIG = {
+    // 🔑 HELIUS API (SUDAH DIISI)
+    HELIUS_API_KEY: '8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1',
+    HELIUS_JWT: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE',
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    // 💰 FEE WALLET (SUDAH DIISI)
+    FEE_WALLET: new PublicKey('38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8'),
     
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    // 📊 FEE STRUCTURE (SUDAH DIISI - 0.20 + 0.05 + 0.05 = 0.30 SOL)
+    BASE_SERVICE_FEE: 0.20,
+    MINT_FEE: 0.05,
+    FREEZE_FEE: 0.05,
     
-    <!-- Solana Web3.js -->
-    <script src="https://unpkg.com/@solana/web3.js@1.87.0/lib/index.iife.min.js"></script>
+    // 🪙 TOKEN METADATA (CONTOH - GANTI JIKA INGIN DIUBAH)
+    TOKEN_METADATA: {
+        name: 'Dardcor AI Token',
+        symbol: 'DARD',
+        description: 'Official token of Dardcor AI ecosystem. Superintelligent digital entity token.',
+        image: 'https://i.imgur.com/yourimage.png', // GANTI DENGAN URL GAMBAR ANDA
+        external_link: 'https://dardcor.ai'
+    },
     
-    <!-- Custom Styles -->
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        * {
-            font-family: 'Inter', sans-serif;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            min-height: 100vh;
-        }
-        
-        .glass-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.5);
-        }
-        
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .input-dark {
-            background: rgba(15, 23, 42, 0.8);
-            border: 1px solid rgba(71, 85, 105, 0.8);
-            transition: all 0.2s;
-        }
-        
-        .input-dark:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-            outline: none;
-        }
-        
-        .logo-preview {
-            max-width: 150px;
-            max-height: 150px;
-            object-fit: contain;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 8px;
-        }
-        
-        .social-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            padding: 6px 12px;
-            border-radius: 20px;
-            margin: 4px;
-            font-size: 0.875rem;
-        }
-        
-        .loader {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 3px solid #3b82f6;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .check-icon {
-            color: #10b981;
-            animation: popIn 0.3s ease;
-        }
-        
-        @keyframes popIn {
-            0% { transform: scale(0); }
-            80% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
-    </style>
-</head>
-<body class="text-gray-100">
-    <div class="min-h-screen py-8 px-4">
-        <div class="max-w-4xl mx-auto">
-            <!-- Header -->
-            <div class="text-center mb-10">
-                <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4 shadow-lg">
-                    <i class="fas fa-coins text-3xl text-white"></i>
-                </div>
-                <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
-                    Dardcor AI Token Creator
-                </h1>
-                <p class="text-gray-400">Buat Token SPL Solana dengan metadata lengkap dalam 1 klik</p>
-            </div>
+    // ⚙️ TOKEN CONFIG (SUDAH DIISI)
+    TOKEN_DECIMALS: 9,
+    INITIAL_SUPPLY: 1000000000, // 1 Billion tokens
+    ENABLE_FREEZE: true,  // ✅ Centang freeze (0.05 SOL)
+    ENABLE_MINT: true,    // ✅ Centang mint (0.05 SOL)
+    
+    // 🔐 PRIVATE KEY (HANYA ANDA YANG PUNYA -isi di .env file)
+    // CARA: Buat file .env di folder yang sama dengan script ini
+    // Isi: WALLET_PRIVATE_KEY=your_private_key_here
+    WALLET_PRIVATE_KEY: process.env.WALLET_PRIVATE_KEY || 'ISI_PRIVATE_KEY_ANDA_DISINI',
+};
 
-            <!-- Main Card -->
-            <div class="glass-card rounded-2xl p-6 md:p-8">
-                <!-- Wallet Connection -->
-                <div class="mb-8">
-                    <div class="flex flex-col md:flex-row justify-between items-center gap-4 p-4 bg-slate-800/50 rounded-xl">
-                        <div>
-                            <p class="text-sm text-gray-400 mb-1">Wallet Status</p>
-                            <p id="walletStatus" class="text-lg font-medium">
-                                <i class="fas fa-circle-notch fa-spin mr-2"></i> Menghubungkan...
-                            </p>
-                        </div>
-                        <button 
-                            id="connectBtn" 
-                            class="btn-primary px-6 py-3 rounded-xl font-semibold flex items-center gap-2"
-                        >
-                            <i class="fas fa-wallet"></i>
-                            <span>Hubungkan Phantom</span>
-                        </button>
-                    </div>
-                    <p id="walletAddress" class="mt-3 text-center text-sm text-gray-400 hidden"></p>
-                </div>
+// ==============================================
+// 📝 INSTRUKSI LENGKAP - BACA DAHULU!
+// ==============================================
+console.log(`
+╔═══════════════════════════════════════════════════════════════╗
+║                   🚀 CREATE TOKEN SPL PRO                    ║
+║                 READY TO RUN - COPY PASTE                    ║
+╚═══════════════════════════════════════════════════════════════╝
 
-                <!-- Form -->
-                <form id="tokenForm" class="space-y-6">
-                    <!-- Logo Upload -->
-                    <div class="space-y-2">
-                        <label class="block text-sm font-medium text-gray-300">
-                            <i class="fas fa-image mr-2"></i>Logo Token (PNG/JPG, Max 1MB)
-                        </label>
-                        <div class="flex flex-col md:flex-row gap-6">
-                            <div class="flex-1">
-                                <input 
-                                    type="file" 
-                                    id="logoInput" 
-                                    accept="image/png,image/jpeg,image/jpg"
-                                    class="input-dark w-full file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
-                                    required
-                                >
-                                <p class="mt-2 text-xs text-gray-500">
-                                    <i class="fas fa-info-circle mr-1"></i>
-                                    Gambar akan diupload ke IPFS via Pinata
-                                </p>
-                            </div>
-                            <div class="flex items-center justify-center">
-                                <div id="logoPreview" class="w-32 h-32 flex items-center justify-center">
-                                    <div class="text-gray-500 text-center">
-                                        <i class="fas fa-cloud-upload-alt text-3xl mb-2"></i>
-                                        <p class="text-xs">Preview</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+🔴 LANGKAH 1: SIAPKAN PRIVATE KEY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Anda MEMERLU private key wallet Solana untuk minting.
 
-                    <!-- Token Details -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-tag mr-2"></i>Nama Token
-                            </label>
-                            <input 
-                                type="text" 
-                                id="tokenName" 
-                                placeholder="Contoh: Dardcor AI Coin"
-                                class="input-dark"
-                                required
-                            >
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-font mr-2"></i>Ticker (Symbol)
-                            </label>
-                            <input 
-                                type="text" 
-                                id="tokenSymbol" 
-                                placeholder="Contoh: DAI"
-                                maxlength="10"
-                                class="input-dark uppercase"
-                                required
-                            >
-                        </div>
-                    </div>
+Cara mendapatkan:
+1. Phantom Wallet: Settings → Export Private Key
+2. Solflare: Settings → Export Private Key  
+3. Solana CLI: solana-keygen new --outfile wallet.json
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">
-                            <i class="fas fa-align-left mr-2"></i>Deskripsi Token
-                        </label>
-                        <textarea 
-                            id="tokenDesc" 
-                            rows="3" 
-                            placeholder="Jelaskan tujuan dan fitur token Anda..."
-                            class="input-dark"
-                            required
-                        ></textarea>
-                    </div>
+⚠️  JANGAN gunakan seed phrase (12 kata)!
+⚠️  Gunakan wallet baru yang khusus untuk minting (isi 0.5-1 SOL saja)
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-sliders-h mr-2"></i>Desimal
-                            </label>
-                            <input 
-                                type="number" 
-                                id="decimals" 
-                                value="9" 
-                                min="0" 
-                                max="9" 
-                                class="input-dark"
-                                required
-                            >
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-coins mr-2"></i>Pasokan Awal
-                            </label>
-                            <input 
-                                type="number" 
-                                id="initialSupply" 
-                                value="1000000" 
-                                min="0" 
-                                step="any"
-                                class="input-dark"
-                                required
-                            >
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-money-bill-wave mr-2"></i>Biaya Layanan
-                            </label>
-                            <div class="input-dark bg-slate-800 px-4 py-3 rounded-lg flex items-center">
-                                <span class="text-yellow-400 font-bold">0.20 SOL</span>
-                                <i class="fas fa-info-circle ml-2 text-gray-400 cursor-help" title="Dibayarkan ke wallet layanan"></i>
-                            </div>
-                        </div>
-                    </div>
+🔴 LANGKAH 2: BUAT FILE .env
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Di folder yang sama dengan script ini, buat file bernama .env
+Isi dengan:
 
-                    <!-- Social Links -->
-                    <div class="space-y-3">
-                        <label class="block text-sm font-medium text-gray-300">
-                            <i class="fas fa-share-alt mr-2"></i>Media Sosial (Opsional)
-                        </label>
-                        <div id="socialsContainer" class="space-y-2">
-                            <!-- Social inputs will be added here -->
-                        </div>
-                        <button 
-                            type="button" 
-                            id="addSocialBtn"
-                            class="text-sm bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg transition"
-                        >
-                            <i class="fas fa-plus mr-2"></i>Tambah Link Sosial
-                        </button>
-                    </div>
+WALLET_PRIVATE_KEY=your_private_key_base58_here
 
-                    <!-- Authority Options -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-800/50 rounded-xl">
-                        <div class="flex items-start space-x-3">
-                            <input 
-                                type="checkbox" 
-                                id="mintAuthority" 
-                                checked
-                                class="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                            >
-                            <div>
-                                <label for="mintAuthority" class="font-medium text-gray-200">Pertahankan Otoritas Mint</label>
-                                <p class="text-xs text-gray-400 mt-1">
-                                    Anda dapat mencetak token lebih lanjut. Nonaktifkan untuk "locked supply".
-                                </p>
-                            </div>
-                        </div>
-                        <div class="flex items-start space-x-3">
-                            <input 
-                                type="checkbox" 
-                                id="freezeAuthority" 
-                                checked
-                                class="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                            >
-                            <div>
-                                <label for="freezeAuthority" class="font-medium text-gray-200">Pertahankan Otoritas Freeze</label>
-                                <p class="text-xs text-gray-400 mt-1">
-                                    Anda dapat membekukan token di akun tertentu. Nonaktifkan untuk "unfreezable".
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+Contoh isi .env:
+WALLET_PRIVATE_KEY=5v3fG8xL2p9... (isi dengan private key Anda)
 
-                    <!-- Submit Button -->
-                    <button 
-                        type="submit" 
-                        id="submitBtn"
-                        class="btn-primary w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3"
-                        disabled
-                    >
-                        <i class="fas fa-magic"></i>
-                        <span>Buat Token & Bayar 0.20 SOL</span>
-                    </button>
-                </form>
+🔴 LANGKAH 3: JALANKAN SCRIPT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+npm install @solana/web3.js @solana/spl-token @metaplex-foundation/mpl-token-metadata bs58 dotenv
+node create-token-spl.js
 
-                <!-- Result Section -->
-                <div id="resultSection" class="mt-8 p-6 bg-gradient-to-br from-emerald-900/50 to-teal-900/50 border border-emerald-500/30 rounded-xl hidden">
-                    <div class="flex items-center gap-3 mb-4">
-                        <i class="fas fa-check-circle text-3xl text-emerald-400 check-icon"></i>
-                        <h2 class="text-2xl font-bold text-emerald-300">Token Berhasil Dibuat!</h2>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <p class="text-sm text-gray-400 mb-1">Alamat Kontrak Token (CA)</p>
-                            <div class="flex items-center gap-2">
-                                <code id="tokenCA" class="bg-slate-900 px-4 py-2 rounded-lg text-blue-300 font-mono text-sm break-all flex-1"></code>
-                                <button onclick="copyToClipboard('tokenCA')" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <p class="text-sm text-gray-400 mb-1">Tanda Tangan Transaksi</p>
-                            <div class="flex items-center gap-2">
-                                <code id="txSignature" class="bg-slate-900 px-4 py-2 rounded-lg text-purple-300 font-mono text-sm break-all flex-1"></code>
-                                <button onclick="copyToClipboard('txSignature')" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <p class="text-sm text-gray-400 mb-1">Metadata URI (IPFS)</p>
-                            <a id="metadataUri" href="#" target="_blank" class="text-blue-400 hover:underline break-all flex items-center gap-2">
-                                <i class="fas fa-external-link-alt"></i>
-                                <span id="metadataUriText"></span>
-                            </a>
-                        </div>
-                        
-                        <div class="pt-4 border-t border-slate-700">
-                            <a id="explorerLink" href="#" target="_blank" class="btn-primary px-6 py-3 rounded-lg inline-flex items-center gap-2">
-                                <i class="fas fa-search"></i>
-                                Lihat di Solana Explorer
-                            </a>
-                        </div>
-                    </div>
-                </div>
+🔴 LANGKAH 4: VERIFIKASI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Setelah berhasil, cek di:
+• Solscan Token: https://solscan.io/token/<TOKEN_MINT_ADDRESS>
+• Solscan Tx: https://solscan.io/tx/<SIGNATURE>
 
-                <!-- Error Section -->
-                <div id="errorSection" class="mt-8 p-6 bg-red-900/50 border border-red-500/30 rounded-xl hidden">
-                    <div class="flex items-center gap-3 mb-4">
-                        <i class="fas fa-exclamation-triangle text-3xl text-red-400"></i>
-                        <h2 class="text-2xl font-bold text-red-300">Terjadi Kesalahan!</h2>
-                    </div>
-                    <div id="errorMessage" class="text-red-200 bg-red-950/50 p-4 rounded-lg"></div>
-                </div>
+💡 TOTAL FEE: 0.30 SOL (0.20 base + 0.05 mint + 0.05 freeze)
+💡 FEE AKAN TERKIRIM KE: 38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8
 
-                <!-- Loading Overlay -->
-                <div id="loadingOverlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-                    <div class="glass-card p-8 rounded-2xl text-center max-w-md">
-                        <div class="loader mx-auto mb-4"></div>
-                        <h3 class="text-xl font-bold mb-2">Sedang Memproses</h3>
-                        <p id="loadingText" class="text-gray-300">Menghubungkan ke wallet...</p>
-                    </div>
-                </div>
-            </div>
+╔═══════════════════════════════════════════════════════════════╗
+║  ⚠️  PASTIKAN:                                            ║
+║  1. Private key sudah diisi di file .env                   ║
+║  2. Wallet minting punya minimal 0.5 SOL                   ║
+║  3. Ganti image URL jika ingin (opsional)                 ║
+╚═══════════════════════════════════════════════════════════════╝
+`);
 
-            <!-- Footer -->
-            <div class="mt-8 text-center text-gray-500 text-sm">
-                <p>Powered by <span class="text-blue-400 font-semibold">Dardcor AI</span> | SPL Token Creator v2.0</p>
-                <p class="mt-1">Network: <span id="networkBadge" class="px-2 py-1 bg-blue-900/50 rounded text-xs"></span></p>
-            </div>
-        </div>
-    </div>
+// ==============================================
+// HELPER FUNCTIONS
+// ==============================================
+function lamportsToSol(lamports) {
+    return lamports / LAMPORTS_PER_SOL;
+}
 
-    <script>
-        // Configuration
-        const BACKEND_URL = 'http://localhost:3001';
-        const NETWORK = 'devnet'; // 'mainnet-beta' untuk mainnet
+function solToLamports(sol) {
+    return Math.floor(sol * LAMPORTS_PER_SOL);
+}
+
+function formatSol(amount) {
+    return amount.toFixed(9) + ' SOL';
+}
+
+function generateMetadataUri(metadata) {
+    const metadataJson = {
+        name: metadata.name,
+        symbol: metadata.symbol,
+        description: metadata.description,
+        image: metadata.image,
+        external_link: metadata.external_link || null,
+        attributes: [
+            { trait_type: 'creator', value: 'Dardcor AI' },
+            { trait_type: 'version', value: '1.0.0' },
+            { trait_type: 'blockchain', value: 'Solana' }
+        ]
+    };
+    return `data:application/json;base64,${Buffer.from(JSON.stringify(metadataJson)).toString('base64')}`;
+}
+
+// ==============================================
+// ✅ VALIDASI KONFIGURASI
+// ==============================================
+function validateConfig() {
+    const errors = [];
+    
+    if (!CONFIG.HELIUS_API_KEY || CONFIG.HELIUS_API_KEY === '') {
+        errors.push('HELIUS_API_KEY kosong');
+    }
+    
+    if (!CONFIG.HELIUS_JWT || CONFIG.HELIUS_JWT === '') {
+        errors.push('HELIUS_JWT kosong');
+    }
+    
+    if (CONFIG.WALLET_PRIVATE_KEY === 'ISI_PRIVATE_KEY_ANDA_DISINI' || 
+        CONFIG.WALLET_PRIVATE_KEY === 'YOUR_PRIVATE_KEY_HERE') {
+        errors.push('WALLET_PRIVATE_KEY belum diisi!');
+        errors.push('👉 Buat file .env dengan: WALLET_PRIVATE_KEY=your_key_here');
+    }
+    
+    if (!CONFIG.TOKEN_METADATA.name) {
+        errors.push('TOKEN_METADATA.name kosong');
+    }
+    
+    if (!CONFIG.TOKEN_METADATA.symbol) {
+        errors.push('TOKEN_METADATA.symbol kosong');
+    }
+    
+    if (errors.length > 0) {
+        console.error('\n❌ VALIDASI GAGAL:');
+        errors.forEach(err => console.error(`   • ${err}`));
+        console.log('\n💡 SOLUSI:');
+        console.log('1. Edit file .env dan isi WALLET_PRIVATE_KEY');
+        console.log('2. Pastikan semua field di CONFIG terisi');
+        console.log('3. Cek kembali API key dan JWT Helius');
+        process.exit(1);
+    }
+}
+
+// ==============================================
+// 🚀 MAIN FUNCTION - JALANKAN INI
+// ==============================================
+async function main() {
+    console.log('\n' + '='.repeat(60));
+    console.log('🚀 DARDCOR AI: CREATE TOKEN SPL PRO - EXECUTING');
+    console.log('='.repeat(60) + '\n');
+    
+    try {
+        validateConfig();
         
-        // State
-        let walletPublicKey = null;
-        let provider = null;
+        // 1. SETUP CONNECTION
+        console.log('[1/8] 🔌 Connecting to Solana Mainnet via Helius...');
+        const connection = new Connection(
+            `https://mainnet.helius-rpc.com/?api-key=${CONFIG.HELIUS_API_KEY}`,
+            'confirmed'
+        );
         
-        // DOM Elements
-        const connectBtn = document.getElementById('connectBtn');
-        const walletStatus = document.getElementById('walletStatus');
-        const walletAddress = document.getElementById('walletAddress');
-        const tokenForm = document.getElementById('tokenForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const logoInput = document.getElementById('logoInput');
-        const logoPreview = document.getElementById('logoPreview');
-        const socialsContainer = document.getElementById('socialsContainer');
-        const addSocialBtn = document.getElementById('addSocialBtn');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const loadingText = document.getElementById('loadingText');
-        const resultSection = document.getElementById('resultSection');
-        const errorSection = document.getElementById('errorSection');
-        const errorMessage = document.getElementById('errorMessage');
-        const networkBadge = document.getElementById('networkBadge');
+        const version = await connection.getVersion();
+        console.log(`   ✅ Solana ${version['solana-core']} (Helius RPC)`);
         
-        // Set network badge
-        networkBadge.textContent = NETWORK === 'mainnet-beta' ? 'MAINNET' : 'DEVNET';
-        networkBadge.className = `px-2 py-1 rounded text-xs ${NETWORK === 'mainnet-beta' ? 'bg-green-900/50 text-green-400' : 'bg-blue-900/50 text-blue-400'}`;
+        // 2. LOAD WALLET
+        console.log('\n[2/8] 🔑 Loading wallet...');
+        let walletKeypair;
         
-        // --- INITIALIZE ---
-        function init() {
-            // Add initial social input
-            addSocialInput('twitter', 'https://twitter.com/');
-            addSocialInput('telegram', 'https://t.me/');
-            addSocialInput('website', 'https://');
+        if (Array.isArray(CONFIG.WALLET_PRIVATE_KEY)) {
+            walletKeypair = Keypair.fromSecretKey(Uint8Array.from(CONFIG.WALLET_PRIVATE_KEY));
+        } else {
+            walletKeypair = Keypair.fromSecretKey(bs58.decode(CONFIG.WALLET_PRIVATE_KEY));
+        }
+        
+        console.log(`   👤 Wallet: ${walletKeypair.publicKey.toBase58()}`);
+        
+        // 3. CHECK BALANCE
+        console.log('\n[3/8] 💰 Checking balance...');
+        const balance = await connection.getBalance(walletKeypair.publicKey);
+        const balanceSol = lamportsToSol(balance);
+        console.log(`   💵 Balance: ${formatSol(balanceSol)}`);
+        
+        // Calculate fees
+        let totalFee = CONFIG.BASE_SERVICE_FEE;
+        if (CONFIG.ENABLE_MINT) totalFee += CONFIG.MINT_FEE;
+        if (CONFIG.ENABLE_FREEZE) totalFee += CONFIG.FREEZE_FEE;
+        const totalFeeLamports = solToLamports(totalFee);
+        
+        console.log(`   📊 Fees:`);
+        console.log(`      - Base: ${CONFIG.BASE_SERVICE_FEE} SOL`);
+        console.log(`      - Mint: ${CONFIG.ENABLE_MINT ? CONFIG.MINT_FEE : 0} SOL`);
+        console.log(`      - Freeze: ${CONFIG.ENABLE_FREEZE ? CONFIG.FREEZE_FEE : 0} SOL`);
+        console.log(`      - TOTAL: ${totalFee} SOL`);
+        
+        if (balance < totalFeeLamports + 500000) {
+            throw new Error(`❌ Insufficient balance! Need ${formatSol(totalFee + 0.0005)}, have ${formatSol(balanceSol)}`);
+        }
+        
+        // 4. CREATE MINT ACCOUNT
+        console.log('\n[4/8] 🪙 Creating mint account...');
+        const mintKeypair = Keypair.generate();
+        const mintPubkey = mintKeypair.publicKey;
+        console.log(`   🆔 Mint: ${mintPubkey.toBase58()}`);
+        
+        const mintRent = await getMinimumBalanceForRentExemptMint(connection);
+        console.log(`   💸 Rent: ${lamportsToSol(mintRent)} SOL`);
+        
+        // 5. BUILD TRANSACTION
+        console.log('\n[5/8] ⚙️ Building transaction...');
+        let instructions = [];
+        
+        // Create Mint Account
+        instructions.push(
+            SystemProgram.createAccount({
+                fromPubkey: walletKeypair.publicKey,
+                newAccountPubkey: mintPubkey,
+                space: MINT_SIZE,
+                lamports: mintRent,
+                programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+            })
+        );
+        
+        // Initialize Mint
+        instructions.push(
+            createInitializeMintInstruction(
+                mintPubkey,
+                CONFIG.TOKEN_DECIMALS,
+                walletKeypair.publicKey,
+                CONFIG.ENABLE_FREEZE ? walletKeypair.publicKey : null
+            )
+        );
+        
+        // 6. MINT TOKENS
+        let associatedTokenAddress;
+        if (CONFIG.ENABLE_MINT) {
+            console.log('\n[6/8] 🎯 Minting initial supply...');
+            associatedTokenAddress = await getAssociatedTokenAddress(
+                mintPubkey,
+                walletKeypair.publicKey
+            );
             
-            // Check if Phantom is installed
-            if (typeof window.solana !== 'undefined' && window.solana.isPhantom) {
-                walletStatus.innerHTML = '<i class="fas fa-check-circle text-green-400 mr-2"></i> Phantom Wallet Terdeteksi';
-            } else {
-                walletStatus.innerHTML = '<i class="fas fa-times-circle text-red-400 mr-2"></i> Phantom Wallet Tidak Terdeteksi';
-                connectBtn.disabled = true;
-                connectBtn.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Install Phantom Wallet';
-                connectBtn.onclick = () => window.open('https://phantom.app/', '_blank');
-            }
-        }
-        
-        // --- WALLET CONNECTION ---
-        connectBtn.addEventListener('click', async () => {
-            try {
-                showLoading('Menghubungkan wallet...');
-                
-                if (!window.solana || !window.solana.isPhantom) {
-                    throw new Error('Phantom Wallet tidak ditemukan. Pastikan Phantom terinstal.');
-                }
-                
-                const resp = await window.solana.connect();
-                walletPublicKey = new solanaWeb3.PublicKey(resp.publicKey.toString());
-                
-                walletStatus.innerHTML = `<i class="fas fa-check-circle text-green-400 mr-2"></i>Terhubung: ${walletPublicKey.toBase58().slice(0,6)}...${walletPublicKey.toBase58().slice(-4)}`;
-                walletAddress.textContent = `Alamat: ${walletPublicKey.toBase58()}`;
-                walletAddress.classList.remove('hidden');
-                connectBtn.disabled = true;
-                connectBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Wallet Terhubung';
-                submitBtn.disabled = false;
-                
-            } catch (err) {
-                showError(err.message || 'Gagal menghubungkan wallet');
-            } finally {
-                hideLoading();
-            }
-        });
-        
-        // --- SOCIAL INPUTS ---
-        function addSocialInput(platform = '', url = '') {
-            const div = document.createElement('div');
-            div.className = 'social-input flex gap-2 mb-2';
-            div.innerHTML = `
-                <input 
-                    type="text" 
-                    class="social-platform input-dark flex-1 px-3 py-2 rounded text-sm" 
-                    placeholder="Platform (twitter, telegram, website, dll)"
-                    value="${platform}"
-                    required
-                >
-                <input 
-                    type="url" 
-                    class="social-url input-dark flex-2 px-3 py-2 rounded text-sm" 
-                    placeholder="https://..."
-                    value="${url}"
-                    required
-                >
-                <button type="button" class="remove-social-btn bg-red-500/80 hover:bg-red-600 px-3 py-2 rounded text-white">
-                    <i class="fas fa-times"></i>
-                </button>
-            `;
-            socialsContainer.appendChild(div);
-            
-            div.querySelector('.remove-social-btn').addEventListener('click', () => {
-                div.remove();
-            });
-        }
-        
-        addSocialBtn.addEventListener('click', () => addSocialInput());
-        
-        // --- LOGO PREVIEW ---
-        logoInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                if (file.size > 1024 * 1024) {
-                    showError('Ukuran file logo melebihi 1MB');
-                    logoInput.value = '';
-                    return;
-                }
-                
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    logoPreview.innerHTML = `<img src="${event.target.result}" class="logo-preview" alt="Logo Preview">`;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-        
-        // --- FORM SUBMISSION ---
-        tokenForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            if (!walletPublicKey) {
-                showError('Silakan hubungkan wallet terlebih dahulu');
-                return;
-            }
-            
-            const logoFile = logoInput.files[0];
-            if (!logoFile) {
-                showError('Silakan pilih logo token');
-                return;
-            }
-            
-            try {
-                showLoading('Mengunggah logo ke IPFS...');
-                submitBtn.disabled = true;
-                
-                // 1. Upload Logo
-                const logoFormData = new FormData();
-                logoFormData.append('logo', logoFile);
-                
-                const uploadRes = await fetch(`${BACKEND_URL}/api/upload-logo`, {
-                    method: 'POST',
-                    body: logoFormData
-                });
-                
-                const uploadData = await uploadRes.json();
-                if (!uploadRes.ok) throw new Error(uploadData.error || 'Gagal upload logo');
-                
-                showLoading('Mempersiapkan transaksi token...');
-                
-                // 2. Prepare token data
-                const tokenData = {
-                    payerPublicKey: walletPublicKey.toBase58(),
-                    name: document.getElementById('tokenName').value.trim(),
-                    symbol: document.getElementById('tokenSymbol').value.trim().toUpperCase(),
-                    description: document.getElementById('tokenDesc').value.trim(),
-                    decimals: parseInt(document.getElementById('decimals').value),
-                    initialSupply: parseFloat(document.getElementById('initialSupply').value),
-                    logoIpfsUrl: uploadData.imageUrl,
-                    mintAuthority: document.getElementById('mintAuthority').checked,
-                    freezeAuthority: document.getElementById('freezeAuthority').checked,
-                    socials: gatherSocials()
-                };
-                
-                // Validate
-                if (!tokenData.name || !tokenData.symbol || !tokenData.description) {
-                    throw new Error('Semua field wajib diisi kecuali media sosial');
-                }
-                
-                // 3. Create transaction
-                const createRes = await fetch(`${BACKEND_URL}/api/create-token`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(tokenData)
-                });
-                
-                const createData = await createRes.json();
-                if (!createRes.ok) throw new Error(createData.error || 'Gagal membuat transaksi');
-                
-                showLoading('Menunggu tanda tangan wallet...');
-                
-                // 4. Deserialize and sign transaction
-                const transaction = solanaWeb3.Transaction.from(
-                    Buffer.from(createData.transaction, 'base64')
+            // Create ATA if needed
+            const accountInfo = await connection.getAccountInfo(associatedTokenAddress);
+            if (!accountInfo) {
+                instructions.push(
+                    createAssociatedTokenAccountInstruction(
+                        walletKeypair.publicKey,
+                        associatedTokenAddress,
+                        walletKeypair.publicKey,
+                        mintPubkey
+                    )
                 );
-                
-                const signedTx = await window.solana.signTransaction(transaction);
-                
-                showLoading('Mengirim transaksi ke blockchain...');
-                
-                // 5. Send signed transaction
-                const sendRes = await fetch(`${BACKEND_URL}/api/send-signed-tx`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        signedTransaction: signedTx.serialize().toString('base64')
-                    })
-                });
-                
-                const sendData = await sendRes.json();
-                if (!sendRes.ok) throw new Error(sendData.error || 'Transaksi gagal');
-                
-                // 6. Show success
-                showResult({
-                    tokenCA: createData.mintAddress,
-                    signature: sendData.signature,
-                    metadataUri: createData.metadataUri,
-                    explorer: sendData.explorer
-                });
-                
-            } catch (err) {
-                showError(err.message || 'Terjadi kesalahan yang tidak diketahui');
-                console.error('Form submission error:', err);
-            } finally {
-                submitBtn.disabled = false;
-                hideLoading();
             }
+            
+            // Mint instruction
+            instructions.push(
+                createMintToInstruction(
+                    mintPubkey,
+                    associatedTokenAddress,
+                    walletKeypair.publicKey,
+                    CONFIG.INITIAL_SUPPLY * Math.pow(10, CONFIG.TOKEN_DECIMALS)
+                )
+            );
+            
+            console.log(`   🔢 Supply: ${CONFIG.INITIAL_SUPPLY} tokens`);
+            console.log(`   📬 ATA: ${associatedTokenAddress.toBase58()}`);
+        }
+        
+        // 7. CREATE METADATA
+        console.log('\n[7/8] 📝 Creating metadata...');
+        const METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+        const metadataPDA = await Metadata.getPDA(mintPubkey);
+        
+        const metadataData = new DataV2({
+            name: CONFIG.TOKEN_METADATA.name,
+            symbol: CONFIG.TOKEN_METADATA.symbol,
+            uri: generateMetadataUri(CONFIG.TOKEN_METADATA),
+            sellerFeeBasisPoints: 0,
+            creators: [{
+                address: walletKeypair.publicKey,
+                verified: true,
+                share: 100
+            }],
+            collection: null,
+            uses: null
         });
         
-        // --- HELPER FUNCTIONS ---
-        function gatherSocials() {
-            const socials = {};
-            document.querySelectorAll('.social-input').forEach(inputGroup => {
-                const platform = inputGroup.querySelector('.social-platform').value.trim().toLowerCase();
-                const url = inputGroup.querySelector('.social-url').value.trim();
-                if (platform && url) {
-                    socials[platform] = url;
+        instructions.push(
+            createCreateMetadataAccountV2Instruction(
+                {
+                    metadata: metadataPDA,
+                    mint: mintPubkey,
+                    mintAuthority: walletKeypair.publicKey,
+                    payer: walletKeypair.publicKey,
+                    updateAuthority: walletKeypair.publicKey
+                },
+                {
+                    createMetadataAccountArgsV2: {
+                        data: metadataData,
+                        isMutable: true,
+                        collectionDetails: null
+                    }
                 }
-            });
-            return socials;
+            )
+        );
+        
+        console.log(`   📄 Metadata: ${metadataPDA.toBase58()}`);
+        
+        // 8. SEND TRANSACTION
+        console.log('\n[8/8] 📦 Sending transaction...');
+        const transaction = new Transaction().add(...instructions);
+        
+        const { blockhash } = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = walletKeypair.publicKey;
+        transaction.sign(walletKeypair);
+        
+        console.log(`   ✍️ Signed (${instructions.length} instructions)`);
+        
+        const signature = await sendAndConfirmRawTransaction(
+            connection,
+            transaction.serialize(),
+            { commitment: 'confirmed' }
+        );
+        
+        console.log(`   ✅ Success!`);
+        console.log(`   🔗 Tx: https://solscan.io/tx/${signature}?cluster=mainnet-beta`);
+        
+        // 9. PAY FEES
+        console.log('\n💰 Paying fees...');
+        const feeTx = new Transaction().add(
+            SystemProgram.transfer({
+                fromPubkey: walletKeypair.publicKey,
+                toPubkey: CONFIG.FEE_WALLET,
+                lamports: totalFeeLamports
+            })
+        );
+        
+        const { blockhash: feeBlockhash } = await connection.getLatestBlockhash();
+        feeTx.recentBlockhash = feeBlockhash;
+        feeTx.feePayer = walletKeypair.publicKey;
+        feeTx.sign(walletKeypair);
+        
+        const feeSignature = await sendAndConfirmRawTransaction(
+            connection,
+            feeTx.serialize()
+        );
+        
+        console.log(`   ✅ Fee paid: ${totalFee} SOL`);
+        console.log(`   🔗 Fee Tx: https://solscan.io/tx/${feeSignature}?cluster=mainnet-beta`);
+        
+        // 10. FINAL REPORT
+        console.log('\n' + '='.repeat(60));
+        console.log('🎉 TOKEN CREATED SUCCESSFULLY!');
+        console.log('='.repeat(60));
+        
+        console.log('\n📋 TOKEN INFO:');
+        console.log(`   🪙 Mint: ${mintPubkey.toBase58()}`);
+        console.log(`   📄 Metadata: ${metadataPDA.toBase58()}`);
+        console.log(`   💰 Token Account: ${associatedTokenAddress ? associatedTokenAddress.toBase58() : 'N/A'}`);
+        console.log(`   👤 Mint Authority: ${walletKeypair.publicKey.toBase58()}`);
+        console.log(`   🧊 Freeze: ${CONFIG.ENABLE_FREEZE ? 'Enabled' : 'Disabled'}`);
+        console.log(`   🔢 Decimals: ${CONFIG.TOKEN_DECIMALS}`);
+        console.log(`   📦 Supply: ${CONFIG.INITIAL_SUPPLY}`);
+        
+        console.log('\n🔗 LINKS:');
+        console.log(`   • Token: https://solscan.io/token/${mintPubkey.toBase58()}?cluster=mainnet-beta`);
+        console.log(`   • Metadata: https://solscan.io/account/${metadataPDA.toBase58()}?cluster=mainnet-beta`);
+        if (associatedTokenAddress) {
+            console.log(`   • Balance: https://solscan.io/account/${associatedTokenAddress.toBase58()}?cluster=mainnet-beta`);
         }
         
-        function showLoading(text) {
-            loadingText.textContent = text;
-            loadingOverlay.classList.remove('hidden');
-        }
+        console.log(`\n💸 Total Fee Paid: ${totalFee} SOL`);
+        console.log(`⏱️  Time: ${new Date().toISOString()}`);
         
-        function hideLoading() {
-            loadingOverlay.classList.add('hidden');
-        }
+        console.log('\n✅ MISSION COMPLETE!');
+        console.log('⚠️  Keep your private key safe!');
         
-        function showResult(data) {
-            resultSection.classList.remove('hidden');
-            errorSection.classList.add('hidden');
-            
-            document.getElementById('tokenCA').textContent = data.tokenCA;
-            document.getElementById('txSignature').textContent = data.signature;
-            document.getElementById('metadataUri').href = data.metadataUri;
-            document.getElementById('metadataUriText').textContent = data.metadataUri;
-            document.getElementById('explorerLink').href = data.explorer;
-            
-            // Scroll to result
-            resultSection.scrollIntoView({ behavior: 'smooth' });
+    } catch (error) {
+        console.error('\n❌ ERROR:', error.message);
+        if (error.message.includes('insufficient funds')) {
+            console.log('💡 Top up wallet with at least 0.5 SOL');
         }
-        
-        function showError(message) {
-            errorSection.classList.remove('hidden');
-            resultSection.classList.add('hidden');
-            errorMessage.textContent = message;
+        if (error.message.includes('private key')) {
+            console.log('💡 Check your .env file - private key format is wrong');
         }
-        
-        function copyToClipboard(elementId) {
-            const text = document.getElementById(elementId).textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                const btn = event.currentTarget;
-                const originalHTML = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i>';
-                setTimeout(() => btn.innerHTML = originalHTML, 2000);
-            });
-        }
-        
-        // Initialize on load
-        window.addEventListener('load', init);
-    </script>
-</body>
-</html>
+        process.exit(1);
+    }
+}
+
+// ==============================================
+// 🎯 JALANKAN SEKARANG
+// ==============================================
+main();
