@@ -40,6 +40,12 @@
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
+        .input-file-custom {
+            cursor: pointer;
+        }
+        .input-file-custom::file-selector-button {
+            @apply mr-4 py-2 px-4 rounded-full border-0 text-sm font-semibold bg-blue-50/10 text-blue-300 hover:bg-blue-50/20;
+        }
         .log-terminal {
             background: #0f172a;
             border: 1px solid #334155;
@@ -59,7 +65,7 @@
             <h1 class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
                 Dardcor AI Token Creator
             </h1>
-            <p class="text-slate-400">Create Solana SPL Token with Metadata • Real Blockchain • No Middleman</p>
+            <p class="text-slate-400">Create Solana SPL Token with Auto Metadata & IPFS via Pinata</p>
         </header>
 
         <div class="grid md:grid-cols-2 gap-8">
@@ -87,7 +93,7 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-1">Token Name *</label>
-                            <input type="text" id="tokenName" placeholder="e.g. Dardcor AI" class="input-dark w-full p-3 rounded-lg">
+                            <input type="text" id="tokenName" placeholder="e.g. Dardcor AI Token" class="input-dark w-full p-3 rounded-lg">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-1">Symbol *</label>
@@ -106,18 +112,19 @@
                         </div>
                     </div>
 
-                    <!-- Metadata -->
+                    <!-- Token Logo Upload -->
                     <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-1">Metadata JSON URL (IPFS/HTTP) *</label>
-                        <input type="url" id="metadataUrl" placeholder="https://ipfs.io/ipfs/Qm..." class="input-dark w-full p-3 rounded-lg">
-                        <p class="text-xs text-slate-500 mt-1">Upload metadata JSON ke IPFS/Pinata, lalu paste URL-nya. Format: {"name":"","symbol":"","description":"","image":""}</p>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Token Logo (Upload Image) *</label>
+                        <input type="file" id="tokenImageFile" accept="image/*" class="input-dark w-full p-3 rounded-lg input-file-custom">
+                        <p class="text-xs text-slate-500 mt-1">Upload gambar token lo. Akan otomatis di-host di IPFS via Pinata.</p>
                     </div>
 
+                    <!-- Token Description -->
                     <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-1">Token Image URL (Optional)</label>
-                        <input type="url" id="imageUrl" placeholder="https://..." class="input-dark w-full p-3 rounded-lg">
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Token Description</label>
+                        <textarea id="tokenDescription" rows="3" placeholder="Deskripsi singkat token lo..." class="input-dark w-full p-3 rounded-lg resize-y"></textarea>
                     </div>
-
+                    
                     <!-- Service Fee Notice -->
                     <div class="bg-blue-900/20 border border-blue-500/30 p-3 rounded-lg text-sm">
                         <i class="fas fa-info-circle text-blue-400 mr-2"></i>
@@ -165,28 +172,25 @@
             createInitializeMintInstruction, 
             MINT_SIZE, 
             getMinimumBalanceForRentExemptMint,
-            createMint,
-            getOrCreateAssociatedTokenAccount,
             mintTo,
-            createAssociatedTokenAccountInstruction
+            getOrCreateAssociatedTokenAccount
         } from '@solana/spl-token';
         import { 
             TokenMetadata, 
-            CreateMetadataArgs, 
             DataV2, 
             PROGRAM_ID as METADATA_PROGRAM_ID 
         } from '@metaplex-foundation/mpl-token-metadata';
 
         // ================= CONFIG =================
         const HELIUS_API_KEY = '8a3c5a03-6ddb-4ebf-8b28-ee7f2b31f8c1';
+        const PINATA_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI0MThlMGJkOC04MjJiLTQzYTktYmY4ZS0zMTA0ZmRlNDQzMzYiLCJlbWFpbCI6InZhcmlhc2ltb3RvcnRAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiRlJBMSJ9LHsiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjEsImlkIjoiTllDMSJ9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjhmNzEyZThmMWE2ZDI1MTU4ZDgxIiwic2NvcGVkS2V5U2VjcmV0IjoiODlhNWEwYjBkOTY4MTM5NDVhOWNlODQwYmNhYTUzNDcwOGExOTRiMGIyYjQ4YzU4MGNiMzMxYmYxODc3MDYzNyIsImV4cCI6MTgwNDMyOTk3OX0.A4lFCvpr0AUDZcDhG9bX3o6uMINlkJcNqDmgQWt97wE'; // User's provided JWT for Pinata
         const FEE_WALLET = new PublicKey('38d92K9xPyTM9Cg4x8fdYcTgzEXiJ5FuwvJbeT6Xu7M8');
-        const NETWORK = 'devnet'; // default, will be overridden by dropdown
+        const NETWORK_DEFAULT = 'devnet'; // default, will be overridden by dropdown
         // ==========================================
 
         // State
         let walletAddress = null;
         let connection = null;
-        let provider = null;
 
         // DOM Elements
         const connectBtn = document.getElementById('connectBtn');
@@ -195,11 +199,20 @@
         const statusIndicator = document.getElementById('statusIndicator');
         const networkSelect = document.getElementById('network');
 
+        // Form Inputs
+        const tokenNameInput = document.getElementById('tokenName');
+        const tokenSymbolInput = document.getElementById('tokenSymbol');
+        const initialSupplyInput = document.getElementById('initialSupply');
+        const decimalsInput = document.getElementById('decimals');
+        const tokenImageFileInput = document.getElementById('tokenImageFile');
+        const tokenDescriptionInput = document.getElementById('tokenDescription');
+
         // Logging
         function log(message, type = 'info') {
             const div = document.createElement('div');
             div.className = `text-sm ${type === 'error' ? 'error' : type === 'success' ? 'success' : 'info'}`;
-            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            // Handle links in log messages if needed
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`; 
             logContainer.appendChild(div);
             logContainer.scrollTop = logContainer.scrollHeight;
         }
@@ -209,7 +222,7 @@
             const network = networkSelect.value;
             const rpcUrl = network === 'devnet' 
                 ? `https://devnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`
-                : `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
+                : `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`; // Mainnet Helius RPC
             connection = new Connection(rpcUrl, 'confirmed');
             statusIndicator.className = 'inline-block w-2 h-2 rounded-full bg-green-500 ml-1 animate-pulse';
             log(`Connected to ${network} via Helius RPC`, 'success');
@@ -219,6 +232,7 @@
         async function connectWallet() {
             if (!window.solana) {
                 log('Phantom Wallet not installed!', 'error');
+                alert('Silakan instal Phantom Wallet untuk melanjutkan.');
                 return;
             }
             try {
@@ -227,6 +241,7 @@
                 connectBtn.innerHTML = `<i class="fas fa-check"></i> ${walletAddress.toString().slice(0, 4)}...${walletAddress.toString().slice(-4)}`;
                 connectBtn.classList.remove('btn-primary');
                 connectBtn.classList.add('bg-green-600');
+                connectBtn.disabled = true; // Disable button after connecting
                 log(`Wallet connected: ${walletAddress.toString()}`, 'success');
                 initConnection();
             } catch (err) {
@@ -246,29 +261,101 @@
             }
         }
 
+        // --- Pinata IPFS Upload Functions ---
+        async function uploadFileToPinata(file) {
+            try {
+                log(`Uploading image "${file.name}" to Pinata...`, 'info');
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('pinataMetadata', JSON.stringify({ name: file.name }));
+
+                const res = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${PINATA_JWT}`
+                    },
+                    body: formData,
+                });
+
+                const resData = await res.json();
+                if (!res.ok) {
+                    throw new Error(`Pinata file upload failed: ${resData.error?.details || resData.error || res.statusText}`);
+                }
+
+                const ipfsHash = resData.IpfsHash;
+                const ipfsUrl = `ipfs://${ipfsHash}`; // Standard IPFS URI
+                const gatewayUrl = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`; // Pinata public gateway URL
+
+                log(`Image uploaded to IPFS! Hash: ${ipfsHash}`, 'success');
+                return { ipfsUrl, gatewayUrl };
+            } catch (error) {
+                log(`Error uploading image to Pinata: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        async function uploadJsonToPinata(jsonData, name) {
+            try {
+                log(`Uploading metadata JSON for "${name}" to Pinata...`, 'info');
+                const res = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${PINATA_JWT}`
+                    },
+                    body: JSON.stringify({
+                        pinataContent: jsonData,
+                        pinataMetadata: {
+                            name: `${name}_metadata.json`
+                        }
+                    }),
+                });
+
+                const resData = await res.json();
+                if (!res.ok) {
+                    throw new Error(`Pinata JSON upload failed: ${resData.error?.details || resData.error || res.statusText}`);
+                }
+
+                const ipfsHash = resData.IpfsHash;
+                const ipfsUrl = `ipfs://${ipfsHash}`; // Standard IPFS URI
+                const gatewayUrl = `https://gateway.pinata.cloud/ipfs/${ipfsHash}`; // Pinata public gateway URL
+
+                log(`Metadata JSON uploaded to IPFS! Hash: ${ipfsHash}`, 'success');
+                return { ipfsUrl, gatewayUrl };
+            } catch (error) {
+                log(`Error uploading JSON to Pinata: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+        // --- End Pinata IPFS Upload Functions ---
+
+
         // Create Token Flow
         async function createToken() {
             if (!walletAddress) {
                 log('Please connect wallet first!', 'error');
+                alert('Hubungkan wallet lo terlebih dahulu!');
                 return;
             }
 
-            const tokenName = document.getElementById('tokenName').value.trim();
-            const tokenSymbol = document.getElementById('tokenSymbol').value.trim();
-            const initialSupply = document.getElementById('initialSupply').value;
-            const decimals = parseInt(document.getElementById('decimals').value);
-            const metadataUrl = document.getElementById('metadataUrl').value.trim();
-            const imageUrl = document.getElementById('imageUrl').value.trim();
+            const tokenName = tokenNameInput.value.trim();
+            const tokenSymbol = tokenSymbolInput.value.trim();
+            const initialSupply = initialSupplyInput.value;
+            const decimals = parseInt(decimalsInput.value);
+            const tokenImageFile = tokenImageFileInput.files[0]; // Get the file
+            const tokenDescription = tokenDescriptionInput.value.trim(); // Get description
 
-            if (!tokenName || !tokenSymbol || !initialSupply || !metadataUrl) {
-                log('All fields (Name, Symbol, Supply, Metadata URL) are required!', 'error');
+            if (!tokenName || !tokenSymbol || !initialSupply || !tokenImageFile) {
+                log('Semua field (Nama, Simbol, Initial Supply, dan Logo Token) wajib diisi!', 'error');
+                alert('Lengkapi semua field yang wajib diisi!');
                 return;
             }
 
             // Check Balance
             const balance = await getBalance();
-            if (balance < 0.2) {
-                log(`Insufficient balance! Need at least 0.2 SOL. Current: ${balance.toFixed(4)} SOL`, 'error');
+            if (balance < 0.2) { // Rough estimate for rent + fees
+                log(`Saldo tidak cukup! Butuh setidaknya 0.2 SOL. Saldo lo: ${balance.toFixed(4)} SOL`, 'error');
+                alert(`Saldo tidak cukup! Butuh setidaknya 0.2 SOL. Saldo lo: ${balance.toFixed(4)} SOL`);
                 return;
             }
 
@@ -276,26 +363,49 @@
             createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
 
             try {
-                log(`Starting token creation: ${tokenName} (${tokenSymbol})`, 'info');
+                log(`Memulai proses pembuatan token: ${tokenName} (${tokenSymbol})`, 'info');
+                const currentNetwork = networkSelect.value;
+                const solscanBaseUrl = `https://solscan.io`;
+                const clusterParam = currentNetwork === 'mainnet-beta' ? '' : `?cluster=${currentNetwork}`;
 
-                // 1. Generate Mint Keypair
+                // --- 1. Upload Image to Pinata ---
+                const { gatewayUrl: imageUrl } = await uploadFileToPinata(tokenImageFile);
+                log(`Gambar token terupload ke: ${imageUrl}`, 'info');
+
+                // --- 2. Create Metadata JSON and Upload to Pinata ---
+                const metadataJson = {
+                    name: tokenName,
+                    symbol: tokenSymbol,
+                    description: tokenDescription,
+                    image: imageUrl, // Use Pinata gateway URL for easy display
+                    properties: {
+                        files: [{ uri: imageUrl, type: tokenImageFile.type }],
+                        category: "image",
+                        creators: [{ address: walletAddress.toBase58(), share: 100 }]
+                    }
+                };
+                const { gatewayUrl: metadataUrl } = await uploadJsonToPinata(metadataJson, tokenName);
+                log(`Metadata JSON terupload ke: ${metadataUrl}`, 'info');
+
+
+                // --- 3. Generate Mint Keypair ---
                 const mintKeypair = Keypair.generate();
-                log('Mint account generated', 'info');
+                log('Keypair Mint account berhasil di-generate.', 'info');
 
-                // 2. Get Rent Exempt for Mint
+                // --- 4. Get Rent Exempt for Mint ---
                 const rentExemptMint = await getMinimumBalanceForRentExemptMint(connection);
-                log(`Rent exempt for mint: ${(rentExemptMint / LAMPORTS_PER_SOL).toFixed(4)} SOL`, 'info');
+                log(`Biaya rent untuk mint: ${(rentExemptMint / LAMPORTS_PER_SOL).toFixed(4)} SOL`, 'info');
 
-                // 3. Create Associated Token Account (ATA) for user
+                // --- 5. Get or Create Associated Token Account (ATA) for user ---
                 const tokenAccount = await getOrCreateAssociatedTokenAccount(
                     connection,
                     walletAddress, // payer
                     mintKeypair.publicKey,
                     walletAddress // owner
                 );
-                log('Associated Token Account created', 'success');
+                log(`Associated Token Account (ATA) berhasil dibuat/ditemukan: ${tokenAccount.address.toBase58()}`, 'success');
 
-                // 4. Build Transaction for Mint Creation
+                // --- 6. Build & Send Transaction for Mint Creation & Initial Minting ---
                 const transaction = new Transaction().add(
                     // Create mint account
                     SystemProgram.createAccount({
@@ -303,50 +413,49 @@
                         newAccountPubkey: mintKeypair.publicKey,
                         lamports: rentExemptMint,
                         space: MINT_SIZE,
-                        programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+                        programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') // SPL Token Program ID
                     }),
                     // Initialize mint
                     createInitializeMintInstruction(
                         mintKeypair.publicKey,
                         decimals,
-                        walletAddress,
-                        walletAddress
+                        walletAddress, // Mint Authority (user's wallet)
+                        walletAddress  // Freeze Authority (user's wallet)
                     ),
                     // Mint tokens to user's ATA
                     mintTo(
                         connection,
-                        walletAddress,
-                        mintKeypair.publicKey,
-                        tokenAccount.address,
-                        walletAddress,
+                        walletAddress, // Payer for mintTo
+                        mintKeypair.publicKey, // Mint Address
+                        tokenAccount.address, // Destination ATA
+                        walletAddress, // Mint Authority (user's wallet)
                         BigInt(initialSupply) * BigInt(10 ** decimals)
                     )
                 );
 
-                // 5. Send Mint Transaction
-                log('Sending mint transaction...', 'info');
-                const mintSignature = await sendTransaction(transaction, mintKeypair);
-                log(`Mint created! TX: ${mintSignature}`, 'success');
+                log('Mengirim transaksi pembuatan mint dan minting awal...', 'info');
+                const mintSignature = await sendTransaction(transaction, [mintKeypair]); // mintKeypair needs to sign for createAccount
+                log(`Mint berhasil dibuat! Signature: <a href="${solscanBaseUrl}/tx/${mintSignature}${clusterParam}" target="_blank" class="text-blue-400 hover:underline">${mintSignature}</a>`, 'success');
 
-                // 6. Create Metadata (Metaplex)
-                log('Creating token metadata...', 'info');
-                const metadata = new TokenMetadata(connection, mintKeypair.publicKey, METADATA_PROGRAM_ID);
+                // --- 7. Create Metadata (Metaplex) ---
+                log('Membuat metadata token di blockchain...', 'info');
+                const metadataInstance = new TokenMetadata(connection, mintKeypair.publicKey, METADATA_PROGRAM_ID);
                 const data = new DataV2({
                     name: tokenName,
                     symbol: tokenSymbol,
-                    uri: metadataUrl,
+                    uri: metadataUrl, // Use the Pinata Gateway URL for metadata JSON
                     sellerFeeBasisPoints: 0,
-                    creators: null,
+                    creators: [{ address: walletAddress.toBase58(), share: 100 }], // Set creator as the wallet
                     collection: null,
                     uses: null
                 });
 
-                const metadataTx = await metadata.createMetadata(data, true);
-                const metadataSignature = await sendTransaction(metadataTx, walletAddress);
-                log(`Metadata created! TX: ${metadataSignature}`, 'success');
+                const metadataTx = await metadataInstance.createMetadata(data, true);
+                const metadataSignature = await sendTransaction(metadataTx); // Wallet signs this
+                log(`Metadata berhasil dibuat! Signature: <a href="${solscanBaseUrl}/tx/${metadataSignature}${clusterParam}" target="_blank" class="text-blue-400 hover:underline">${metadataSignature}</a>`, 'success');
 
-                // 7. Transfer Fee (0.15 SOL)
-                log('Transferring service fee 0.15 SOL...', 'info');
+                // --- 8. Transfer Fee (0.15 SOL) ---
+                log('Mentransfer service fee 0.15 SOL...', 'info');
                 const feeLamports = 0.15 * LAMPORTS_PER_SOL;
                 const feeTx = new Transaction().add(
                     SystemProgram.transfer({
@@ -355,19 +464,19 @@
                         lamports: Math.floor(feeLamports)
                     })
                 );
-                const feeSignature = await sendTransaction(feeTx, walletAddress);
-                log(`Fee transferred! TX: ${feeSignature}`, 'success');
+                const feeSignature = await sendTransaction(feeTx); // Wallet signs this
+                log(`Fee berhasil ditransfer! Signature: <a href="${solscanBaseUrl}/tx/${feeSignature}${clusterParam}" target="_blank" class="text-blue-400 hover:underline">${feeSignature}</a>`, 'success');
 
-                // Summary
-                log('✅ TOKEN CREATION COMPLETE!', 'success');
-                log(`Token Mint: ${mintKeypair.publicKey.toString()}`, 'success');
-                log(`Metadata TX: ${metadataSignature}`, 'success');
-                log(`Fee TX: ${feeSignature}`, 'success');
-                log(`View on Solscan: https://solscan.io/token/${mintKeypair.publicKey.toString()}?cluster=${networkSelect.value}`, 'info');
+                // --- Summary ---
+                log('✅ PEMBUATAN TOKEN SELESAI!', 'success');
+                log(`Alamat Mint Token: <a href="${solscanBaseUrl}/token/${mintKeypair.publicKey.toBase58()}${clusterParam}" target="_blank" class="text-blue-400 hover:underline">${mintKeypair.publicKey.toBase58()}</a>`, 'success');
+                log(`Metadata URL: <a href="${metadataUrl}" target="_blank" class="text-blue-400 hover:underline">${metadataUrl}</a>`, 'info');
+                log(`Gambar Token: <a href="${imageUrl}" target="_blank" class="text-blue-400 hover:underline">${imageUrl}</a>`, 'info');
 
             } catch (err) {
-                log('Error: ' + err.message, 'error');
+                log('Error saat membuat token: ' + err.message, 'error');
                 console.error(err);
+                alert('Terjadi kesalahan saat membuat token. Cek log untuk detailnya.');
             } finally {
                 createBtn.disabled = false;
                 createBtn.innerHTML = '<i class="fas fa-magic"></i> Create Token';
@@ -375,37 +484,46 @@
         }
 
         // Helper: Send Transaction (handles signing)
-        async function sendTransaction(transaction, signer) {
+        async function sendTransaction(transaction, signers = []) {
             try {
-                // Convert transaction to versioned if needed
-                const { blockhash } = await connection.getLatestBlockhash();
-                transaction.recentBlockhash = blockhash;
-                transaction.feePayer = walletAddress;
-
-                // Sign
-                if (signer instanceof Keypair) {
-                    transaction.sign(signer);
-                } else {
-                    // Wallet will sign via Phantom
+                if (!connection || !walletAddress) {
+                    throw new Error("Koneksi atau wallet belum siap.");
                 }
 
-                // Send via Helius (with JWT if needed)
-                const rawTx = transaction.serialize();
-                const { context } = await connection.getLatestBlockhash();
-                const signature = await connection.sendRawTransaction(rawTx, {
-                    skipPreflight: false,
+                // Get latest blockhash for transaction validity
+                const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+                transaction.recentBlockhash = blockhash;
+                transaction.lastValidBlockHeight = lastValidBlockHeight;
+                transaction.feePayer = walletAddress;
+
+                // Sign with additional keypairs if provided (e.g., mintKeypair)
+                if (signers.length > 0) {
+                    transaction.partialSign(...signers);
+                }
+
+                // Request Phantom to sign the transaction
+                const signedTransaction = await window.solana.signTransaction(transaction);
+                
+                // Send the raw transaction
+                const signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
+                    skipPreflight: false, // Ensure preflight checks are run
                     preflightCommitment: 'confirmed'
                 });
 
-                // Confirm
+                // Confirm the transaction
                 await connection.confirmTransaction({
                     signature,
-                    ...context
+                    blockhash,
+                    lastValidBlockHeight
                 });
 
                 return signature;
             } catch (err) {
-                throw new Error(`TX failed: ${err.message}`);
+                // Check if user rejected the transaction
+                if (err.message.includes('User rejected the request')) {
+                    throw new Error("Transaksi dibatalkan oleh user di Phantom Wallet.");
+                }
+                throw new Error(`Transaksi gagal: ${err.message}`);
             }
         }
 
@@ -413,14 +531,22 @@
         connectBtn.addEventListener('click', connectWallet);
         createBtn.addEventListener('click', createToken);
         networkSelect.addEventListener('change', () => {
-            if (walletAddress) initConnection();
+            if (walletAddress) initConnection(); // Re-initialize connection if wallet is already connected
         });
 
         // Check Phantom on load
-        if (window.solana) {
-            log('Phantom Wallet detected', 'info');
+        if (window.solana && window.solana.isPhantom && window.solana.isConnected) {
+            walletAddress = new PublicKey(window.solana.publicKey.toString());
+            connectBtn.innerHTML = `<i class="fas fa-check"></i> ${walletAddress.toString().slice(0, 4)}...${walletAddress.toString().slice(-4)}`;
+            connectBtn.classList.remove('btn-primary');
+            connectBtn.classList.add('bg-green-600');
+            connectBtn.disabled = true;
+            log('Phantom Wallet sudah terhubung secara otomatis.', 'info');
+            initConnection();
         } else {
-            log('Phantom Wallet not found. Install it first.', 'error');
+            log('Phantom Wallet tidak ditemukan atau belum terhubung. Mohon hubungkan untuk memulai.', 'info');
+            statusIndicator.className = 'inline-block w-2 h-2 rounded-full bg-red-500 ml-1';
+            initConnection(); // Still initialize connection for network selection, but indicate no wallet
         }
     </script>
 </body>
